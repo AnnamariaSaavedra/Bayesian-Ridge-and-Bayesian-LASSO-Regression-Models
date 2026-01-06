@@ -149,10 +149,10 @@ pWAIC <- 0
 
 for (i in 1:n) {
   # LPPD
-  TMP <- dnorm(x = y[i], mean = x%*%t(M1$BETA), sd = sqrt(M1$SIGMA))
+  TMP <- dnorm(x = y[i], mean = x[i,]%*%t(M1$BETA), sd = sqrt(M1$SIGMA))
   LPPD <- LPPD + log(mean(TMP))
   # pWAIC
-  TMP_2 <- dnorm(x = y[i], mean = x%*%t(M1$BETA), sd = sqrt(M1$SIGMA), log = TRUE)
+  TMP_2 <- dnorm(x = y[i], mean = x[i,]%*%t(M1$BETA), sd = sqrt(M1$SIGMA), log = TRUE)
   pWAIC <- pWAIC + 2*(log(mean(TMP)) - mean(TMP_2))
 }
 
