@@ -151,19 +151,3 @@ create_dataset <- function(Scenary) {
   }
   return(list(X = X, Y = Y, F_TRUE = F_TRUE, XI = XI, BETA = BETA, SIGMA2 = SIGMA2))
 }
-
-# 3. Plot histogram and density function
-
-par(mfrow=c(1,1),mar=c(3,3,1,1),mgp=c(1.75,.75,0))
-
-y0 <- seq(from = min(y), to = max(y), len = n) # Sequence of values
-
-plot(y0, omega[1]*dnorm(x = y0, mean = x%*%beta[1,], sd = sqrt(sigma2[1])) +
-         omega[2]*dnorm(x = y0, mean = x%*%beta[2,], sd = sqrt(sigma2[2])) +
-         omega[3]*dnorm(x = y0, mean = x%*%beta[3,], sd = sqrt(sigma2[3])),
-     type = "l", xlab = "", ylab = "Densidad", lwd = 2, ylim = c(0, 0.25))
-hist(x = y, freq = F, nclass = 20, cex.axis = 0.8, col = "gray90", border = "gray90", main = "", xlab = "y", ylab = "Densidad")
-lines(y0, omega[1]*dnorm(x = y0, mean = x%*%beta[1,], sd = sqrt(sigma2[1])) +
-          omega[2]*dnorm(x = y0, mean = x%*%beta[2,], sd = sqrt(sigma2[2])) +
-          omega[3]*dnorm(x = y0, mean = x%*%beta[3,], sd = sqrt(sigma2[3])),
-      lwd=2 )
