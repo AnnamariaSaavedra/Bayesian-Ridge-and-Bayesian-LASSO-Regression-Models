@@ -47,8 +47,8 @@ G_prior <- function(shape, rate, mu, Sigma, n_sams, n_skip, n_burn, verbose = TR
       LL[i] <- ll
     }
     # Algorithm progress
-    if (verbose && t %% ncat == 0)
-      cat(sprintf("%.1f%% completado\n", 100*t/B))
+    if (verbose && b %% ncat == 0)
+      cat(sprintf("%.1f%% completado\n", 100*b/B))
   }
   
   return(list(BETA = BETA, SIGMA = SIGMA, LL = LL))
