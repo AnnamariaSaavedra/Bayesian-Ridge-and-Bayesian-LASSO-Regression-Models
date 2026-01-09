@@ -26,6 +26,7 @@ G_prior <- function(shape, rate, mu, Sigma, n_sams, n_skip, n_burn, verbose = TR
 {
   # Number of iterations of the Monte Carlo algorithm
   B <- n_burn + n_sams*n_skip
+  ncat <- floor(0.01*B)
   
   # Objects where the samples of beta, and sigma2, and log-likelihood will be stored
   SIGMA <- numeric(n_sams)
@@ -46,10 +47,8 @@ G_prior <- function(shape, rate, mu, Sigma, n_sams, n_skip, n_burn, verbose = TR
       LL[i] <- ll
     }
     # Algorithm progress
-    ncat <- floor(B / 10)
-    if (b %% ncat == 0) {
-      cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
-    }
+    if (verbose && t %% ncat == 0)
+      cat(sprintf("%.1f%% completado\n", 100*t/B))
   }
   
   return(list(BETA = BETA, SIGMA = SIGMA, LL = LL))
