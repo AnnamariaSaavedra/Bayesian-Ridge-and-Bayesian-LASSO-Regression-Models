@@ -161,12 +161,13 @@ sample_alpha <- function(alpha, xi, n, l, m)
 
 # Gibbs sampling algorithm
 
-Gibbs_lassonp <- function(y, n_burn, n_sams, n_skip, e, f, g, h, l, m) {
+Gibbs_lassonp <- function(y, n_burn, n_sams, n_skip, e, f, g, h, l, m, verbose = TRUE) {
   
   max_K <- floor(n / 2) # Maximum number of clusters
   
   # Number of iterations of the Gibbs sampling algorithm
   B <- n_burn + n_sams*n_skip
+  ncat <- floor(0.01*B)
   
   # Objects where the samples of xi, beta, sigma2, tau, lambda, and alpha and log-likelihood will be stored
   XI <- matrix(NA, nrow = n_sams, ncol = n)
@@ -223,10 +224,8 @@ Gibbs_lassonp <- function(y, n_burn, n_sams, n_skip, e, f, g, h, l, m) {
       LL[i] <- ll
      }
     # Algorithm progress
-    ncat <- floor(B / 10)
-    if (b %% ncat == 0) {
-      cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
-    }
+    if (verbose && t %% ncat == 0)
+      cat(sprintf("%.1f%% completado\n", 100*t/B))
   }
   
   return(list(XI = XI, BETA = BETA, SIGMA = SIGMA, TAU = TAU, LAMBDA = LAMBDA, ALPHA = ALPHA, LL = LL))
