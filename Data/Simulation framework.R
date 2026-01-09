@@ -4,15 +4,15 @@ set.seed(123)
 
 # 1. Simulation framework to evaluate Bayesian regression models
 
-n <- c(rep(50, 12), rep(100, 12), rep(200, 12), rep(500, 12)) # Number of observations
+n <- c(rep(50, 6), rep(100, 6), rep(200, 6), rep(500, 6)) # Number of observations
 
-K <- c(rep(c(rep(2, 4), rep(3, 4), rep(4, 4)), 4)) # Number of clusters
+K <- c(rep(c(rep(2, 2), rep(3, 2), rep(4, 2)), 4)) # Number of clusters
 
-p <- c(rep(c(rep(10, 2), rep(20, 2)), 12)) # Number of parameters
+p <- c(rep(c(10, 20), 12)) # Number of parameters
 
-p_0 <- c(rep(c(5, 10), 24)) # Number of non-zero elements
+p_0 <- c(rep(5, 24)) # Number of non-zero elements
 
-Scenery <- data.frame(Escenario = 1:48, n = n, K = K, p = p, s = p_0)
+Scenery <- data.frame(Escenario = 1:length(n), n = n, K = K, p = p, s = p_0)
 
 sigma2_sim <- list(sigma2_k2 = c(1, 2), sigma2_k3 = c(1, 2, 1), sigma2_k4 = c(1, 2, 1, 4)) # Variance parameter
 
@@ -40,8 +40,8 @@ mean_parameter <- function(beta, beta_sim, K, p, p_0){
         beta[i, j] <- beta_sim[i, j]
       }
     }
-    for (j in p_0:p) {
-      beta[3,j] <- beta_sim[3,j]
+    for (j in 1:p_0) {
+      beta[3, p_0 + j] <- beta_sim[3,j]
     }
   } else{
     for (i in 1:(K - 2)) {
@@ -50,8 +50,8 @@ mean_parameter <- function(beta, beta_sim, K, p, p_0){
       }
     }
     for (i in (K - 1):K) {
-      for (j in p_0:p) {
-        beta[i, j] <- beta_sim[i,j]
+      for (j in 1:p_0) {
+        beta[i, p_0 + j] <- beta_sim[i,j]
       }
     }
   }
