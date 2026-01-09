@@ -222,6 +222,11 @@ Gibbs_lassonp <- function(y, n_burn, n_sams, n_skip, e, f, g, h, l, m) {
       ALPHA[i] <- alpha
       LL[i] <- ll
      }
+    # Algorithm progress
+    ncat <- floor(B / 10)
+    if (b %% ncat == 0) {
+      cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
+    }
   }
   
   return(list(XI = XI, BETA = BETA, SIGMA = SIGMA, TAU = TAU, LAMBDA = LAMBDA, ALPHA = ALPHA, LL = LL))
