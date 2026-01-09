@@ -52,6 +52,7 @@ Gibbs_lasso <- function(y, x, e, f, g, h, n_skip, n_sams, n_burn, verbose = TRUE
   
   # Number of iterations of the Gibbs sampling algorithm
   B <- n_burn + n_sams*n_skip
+  ncat <- floor(0.01*B)
   
   # Objects where the samples of beta, tau, sigma2, and lambda, and log-likelihood will be stored
   BETA <- matrix(data = NA, nrow = n_sams, ncol = p)
@@ -83,10 +84,8 @@ Gibbs_lasso <- function(y, x, e, f, g, h, n_skip, n_sams, n_burn, verbose = TRUE
         LL[t] <- sum(dnorm(x = y, mean = c(x%*%beta), sd = sqrt(sigma2), log = TRUE))   
       }
       # Algorithm progress
-      ncat <- floor(B / 10)
-      if (b %% ncat == 0) {
-        cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
-    }
+      if (verbose && i %% ncat == 0)
+        cat(sprintf("%.1f%% completado\n", 100*i/B))
   }
   
   return(list(BETA = BETA, SIGMA = SIGMA, TAU = TAU, LAMBDA = LAMBDA, LL = LL))
