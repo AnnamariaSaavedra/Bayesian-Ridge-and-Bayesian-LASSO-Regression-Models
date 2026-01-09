@@ -71,6 +71,11 @@ Gibbs_ridge <- function(y, x, a, b, c, d, n_skip, n_sams, n_burn, verbose = TRUE
         LAMBDA[t] <- lambda
         LL[t] <- sum(dnorm(x = y, mean = c(x%*%beta), sd = sqrt(sigma2), log = TRUE))
       }
+      # Algorithm progress
+      ncat <- floor(B / 10)
+      if (b %% ncat == 0) {
+        cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
+    }
   }
   return(list(BETA = BETA, SIGMA = SIGMA, LL = LL, LAMBDA = LAMBDA))
 }
