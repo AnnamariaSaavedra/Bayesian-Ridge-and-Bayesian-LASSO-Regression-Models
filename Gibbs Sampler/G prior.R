@@ -45,7 +45,11 @@ G_prior <- function(shape, rate, mu, Sigma, n_sams, n_skip, n_burn, verbose = TR
       BETA[i,] <- beta
       LL[i] <- ll
     }
-    
+    # Algorithm progress
+    ncat <- floor(B / 10)
+    if (b %% ncat == 0) {
+      cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
+    }
   }
   
   return(list(BETA = BETA, SIGMA = SIGMA, LL = LL))
