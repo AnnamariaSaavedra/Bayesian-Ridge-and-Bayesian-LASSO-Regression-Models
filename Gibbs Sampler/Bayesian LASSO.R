@@ -80,9 +80,13 @@ Gibbs_lasso <- function(y, x, e, f, g, h, n_skip, n_sams, n_burn, verbose = TRUE
         TAU[t,] <- tau
         SIGMA[t] <- sigma2
         LAMBDA[t] <- lambda
-        LL[t] <- sum(dnorm(x = y, mean = c(x%*%beta), sd = sqrt(sigma2), log = TRUE))
-        
+        LL[t] <- sum(dnorm(x = y, mean = c(x%*%beta), sd = sqrt(sigma2), log = TRUE))   
       }
+      # Algorithm progress
+      ncat <- floor(B / 10)
+      if (b %% ncat == 0) {
+        cat(100 * round(b / B, 1), "% completado ... \n", sep = "")
+    }
   }
   
   return(list(BETA = BETA, SIGMA = SIGMA, TAU = TAU, LAMBDA = LAMBDA, LL = LL))
