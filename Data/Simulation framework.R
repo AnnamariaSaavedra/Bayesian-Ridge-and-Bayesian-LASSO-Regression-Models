@@ -29,13 +29,13 @@ beta_sim <- matrix(data = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 # Set the mean vector for the i-th scenery
 mean_parameter <- function(beta, beta_sim, K, p, p_0){
   if (K == 2) {
-    for (i in 1:K) {
+    for (i in 1:2) {
       for (j in 1:p_0) {
         beta[i, j] <- beta_sim[i, j]
       }
     }
   } else if (K == 3) {
-    for (i in 1:(K - 1)) {
+    for (i in 1:2) {
       for (j in 1:p_0) {
         beta[i, j] <- beta_sim[i, j]
       }
@@ -44,12 +44,12 @@ mean_parameter <- function(beta, beta_sim, K, p, p_0){
       beta[3, p_0 + j] <- beta_sim[3,j]
     }
   } else{
-    for (i in 1:(K - 2)) {
+    for (i in 1:2) {
       for (j in 1:p_0) {
         beta[i, j] <- beta_sim[i, j]
       }
     }
-    for (i in (K - 1):K) {
+    for (i in 3:4) {
       for (j in 1:p_0) {
         beta[i, p_0 + j] <- beta_sim[i,j]
       }
