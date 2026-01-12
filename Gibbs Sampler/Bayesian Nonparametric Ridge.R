@@ -152,7 +152,7 @@ sample_alpha <- function(alpha, xi, n, l, m)
 
 # Gibbs sampling algorithm
 
-Gibbs_ridgenp <- function(y, n_burn, n_sams, n_skip, a, b, c, d, l, m, verbose = TRUE) {
+Gibbs_ridgenp <- function(y, x, n_burn, n_sams, n_skip, a, b, c, d, l, m, verbose = TRUE) {
   
   max_K <- floor(n / 2) # Maximum number of clusters
   
