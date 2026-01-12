@@ -161,7 +161,7 @@ sample_alpha <- function(alpha, xi, n, l, m)
 
 # Gibbs sampling algorithm
 
-Gibbs_lassonp <- function(y, n_burn, n_sams, n_skip, e, f, g, h, l, m, verbose = TRUE) {
+Gibbs_lassonp <- function(y, x, n_burn, n_sams, n_skip, e, f, g, h, l, m, verbose = TRUE) {
   
   max_K <- floor(n / 2) # Maximum number of clusters
   
