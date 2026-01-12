@@ -137,8 +137,8 @@ create_dataset <- function(Scenary) {
     
     # Sample response variable for each cluster
     for (k in 1:K) {
-    y[xi == k] <- rnorm(n = n_k[k], mean = x[xi == k,]%*%beta[k,], sd = sigma2[k])
-    f_true[xi == k] <- dnorm(x = y[xi == k], mean = x[xi == k,]%*%beta[k,], sd = sigma2[k])
+    y[xi == k] <- rnorm(n = n_k[k], mean = x[xi == k,]%*%beta[k,], sd = sqrt(sigma2[k]))
+    f_true[xi == k] <- dnorm(x = y[xi == k], mean = x[xi == k,]%*%beta[k,], sd = sqrt(sigma2[k]))
     }
     
     # Save the response variable, the density function, and the cluster indicator variables
