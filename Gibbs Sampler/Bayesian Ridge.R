@@ -4,7 +4,7 @@ set.seed(123)
 
 # Full conditional distribution of beta
 
-sample_beta_ridge <- function(sigma2, lambda, X, X_y){
+sample_beta_ridge <- function(sigma2, lambda, X, X_y, p){
   Z <- solve(X + diag(sigma2*lambda, p)) # Compute covariance matrix
   
   mu <- Z%*%X_y # Compute mean vector
@@ -15,7 +15,7 @@ sample_beta_ridge <- function(sigma2, lambda, X, X_y){
 
 # Full conditional distribution of sigma2
 
-sample_sigma2_ridge <- function(beta, y, x, a, b){
+sample_sigma2_ridge <- function(beta, y, x, a, b, n){
   residuals <- (y - x%*%beta)
   RSS <- sum(residuals^2) # Compute residual sum of squares
   
@@ -28,7 +28,7 @@ sample_sigma2_ridge <- function(beta, y, x, a, b){
 
 # Full conditional distribution of lambda
 
-sample_lambda_ridge <- function(beta, c, d){
+sample_lambda_ridge <- function(beta, c, d, n){
   shape <- (0.5*p) + c # Shape parameter
   rate <- (0.5*(sum(beta^2))) + d # Rate parameter
   
@@ -38,7 +38,7 @@ sample_lambda_ridge <- function(beta, c, d){
 
 # Gibbs sampling algorithm
 
-Gibbs_ridge <- function(y, x, a, b, c, d, n_skip, n_sams, n_burn, verbose = TRUE)
+Gibbs_ridge <- function(y, x, a, b, c, d, n, p, n_skip, n_sams, n_burn, verbose = TRUE)
 {
   X <- t(x)%*%x # Compute X^{\top} X
   X_y <- t(x)%*%y # Compute X^{\top} y
@@ -60,9 +60,9 @@ Gibbs_ridge <- function(y, x, a, b, c, d, n_skip, n_sams, n_burn, verbose = TRUE
     
     # Gibbs sampling algorithm
     for (i in 1:B) {
-      beta <- sample_beta_ridge(sigma2, lambda, X, X_y) # Update beta
-      sigma2 <- sample_sigma2_ridge(beta, y, x, a, b) # Update sigma2
-      lambda <- sample_lambda_ridge(beta, c, d) # Update lambda
+      beta <- sample_beta_ridge(sigma2, lambda, X, X_y, p) # Update beta
+      sigma2 <- sample_sigma2_ridge(beta, y, x, a, b, n) # Update sigma2
+      lambda <- sample_lambda_ridge(beta, c, d, p) # Update lambda
       
       # Save effective samples
       if (i > n_burn && (i - n_burn) %% n_skip == 0) {
