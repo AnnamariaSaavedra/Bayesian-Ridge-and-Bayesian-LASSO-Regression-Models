@@ -4,7 +4,7 @@ set.seed(123)
 
 # Full conditional distribution of xi
 
-sample_xi_ridge <- function(y, x, xi, beta, sigma2, alpha, a, b, c, d) {
+sample_xi_ridge <- function(y, x, xi, beta, sigma2, alpha, a, b, c, d, n, p) {
   n <- length(y) # Number of observations
   
   for (i in 1:n) {
@@ -76,7 +76,7 @@ sample_xi_ridge <- function(y, x, xi, beta, sigma2, alpha, a, b, c, d) {
 
 # Full conditional distribution of beta
 
-sample_beta_ridgenp <- function(y, x, xi, sigma2, lambda) 
+sample_beta_ridgenp <- function(y, x, xi, sigma2, lambda, p) 
 {
   K <- max(xi) # Number of clusters
   
@@ -99,7 +99,7 @@ sample_beta_ridgenp <- function(y, x, xi, sigma2, lambda)
 
 # Full conditional distribution of sigma2
 
-sample_sigma2_ridgenp <- function(y, x, xi, beta, a, b)
+sample_sigma2_ridgenp <- function(y, x, xi, beta, a, b, p)
 {
   K <- max(xi) # Number of clusters
   
@@ -124,7 +124,7 @@ sample_sigma2_ridgenp <- function(y, x, xi, beta, a, b)
 
 # Full conditional distribution of lambda
 
-sample_lambda_ridgenp <- function(xi, beta, c, d) 
+sample_lambda_ridgenp <- function(xi, beta, c, d, p) 
 {
   K <- length(unique(xi)) # Number of clusters
   
@@ -152,7 +152,7 @@ sample_alpha <- function(alpha, xi, n, l, m)
 
 # Gibbs sampling algorithm
 
-Gibbs_ridgenp <- function(y, x, n_burn, n_sams, n_skip, a, b, c, d, l, m, verbose = TRUE) {
+Gibbs_ridgenp <- function(y, x, n_burn, n_sams, n_skip, a, b, c, d, l, m, n, p, verbose = TRUE) {
   
   max_K <- floor(n / 2) # Maximum number of clusters
   
@@ -179,17 +179,17 @@ Gibbs_ridgenp <- function(y, x, n_burn, n_sams, n_skip, a, b, c, d, l, m, verbos
   
   for (t in 1:B) {
     # Update xi
-    xi_b <- sample_xi_ridge(y, x, xi, beta, sigma2, alpha, a, b, c, d)
+    xi_b <- sample_xi_ridge(y, x, xi, beta, sigma2, alpha, a, b, c, d, n, p)
     xi <- xi_b$xi
     beta <- xi_b$beta
     sigma2 <- xi_b$sigma2
     
     # Update cluster parameters
-    beta <- sample_beta_ridgenp(y, x, xi, sigma2, lambda) # Update beta
-    sigma2 <- sample_sigma2_ridgenp(y, x, xi, beta, a, b) # Update sigma2
+    beta <- sample_beta_ridgenp(y, x, xi, sigma2, lambda, p) # Update beta
+    sigma2 <- sample_sigma2_ridgenp(y, x, xi, beta, a, b, p) # Update sigma2
     
     # Update hyperparameters
-    lambda <- sample_lambda_ridgenp(xi, beta, c, d) # Update lambda
+    lambda <- sample_lambda_ridgenp(xi, beta, c, d, p) # Update lambda
     alpha <- sample_alpha(alpha, xi, n, l, m) # Update alpha
     
     # Compute log-likelihood
