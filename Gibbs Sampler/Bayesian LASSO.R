@@ -4,7 +4,7 @@ set.seed(123)
 
 # Full conditional distribution of beta
 
-sample_beta_lasso <- function(sigma2, tau, X, X_y){
+sample_beta_lasso <- function(sigma2, tau, X, X_y, p){
   Z <- solve(X + diag(sigma2/tau, p)) # Compute covariance matrix
   
   mu <- Z%*%X_y # Compute mean vector
@@ -15,14 +15,14 @@ sample_beta_lasso <- function(sigma2, tau, X, X_y){
 
 # Full conditional distribution of tau2
 
-sample_tau <- function(beta, lambda){
+sample_tau <- function(beta, lambda, p){
   tau <- GIGrvg::rgig(n = p, lambda = 0.5, chi = beta^2, psi = lambda) # Sample tau2
   return(tau)
 }
 
 # Full conditional distribution of sigma2
 
-sample_sigma2_lasso <- function(beta, y, x, e, f){
+sample_sigma2_lasso <- function(beta, y, x, e, f, n){
   residuals <- (y - x%*%beta)
   RSS <- sum(residuals^2) # Compute residual sum of squares
   
@@ -35,7 +35,7 @@ sample_sigma2_lasso <- function(beta, y, x, e, f){
 
 # Full conditional distribution of lambda
 
-sample_lambda_lasso <- function(tau, g, h){
+sample_lambda_lasso <- function(tau, g, h, p){
   shape <- p + g # Shape parameter
   rate <- (0.5*sum(tau)) + h # Rate parameter
   
@@ -45,7 +45,7 @@ sample_lambda_lasso <- function(tau, g, h){
 
 # Gibbs sampling algorithm
 
-Gibbs_lasso <- function(y, x, e, f, g, h, n_skip, n_sams, n_burn, verbose = TRUE)
+Gibbs_lasso <- function(y, x, e, f, g, h, n, p, n_skip, n_sams, n_burn, verbose = TRUE)
 {
   X <- t(x)%*%x # Compute X^{\top} X
   X_y <- t(x)%*%y # Compute X^{\top} y
@@ -69,10 +69,10 @@ Gibbs_lasso <- function(y, x, e, f, g, h, n_skip, n_sams, n_burn, verbose = TRUE
   
     # Gibbs sampling algorithm
     for (i in 1:B) {
-      beta <- sample_beta_lasso(sigma2, tau, X, X_y) # Update beta
-      tau <- sample_tau(beta, lambda) # Update tau2
-      sigma2 <- sample_sigma2_lasso(beta, y, x, e, f) # Update sigma2
-      lambda <- sample_lambda_lasso(tau, g, h) # Update lambda
+      beta <- sample_beta_lasso(sigma2, tau, X, X_y, p) # Update beta
+      tau <- sample_tau(beta, lambda, p) # Update tau2
+      sigma2 <- sample_sigma2_lasso(beta, y, x, e, f, n) # Update sigma2
+      lambda <- sample_lambda_lasso(tau, g, h, p) # Update lambda
       
       # Save effective samples
       if (i > n_burn && (i - n_burn) %% n_skip == 0) {
