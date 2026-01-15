@@ -118,16 +118,19 @@ d <- 1; h <- 1 # Rate parameter of gamma distribution
 
 # 5. Results
 
-simulation_results <- function(Scenary, data,
+simulation_results <- function(data,
                                a, b, c, d,
                                e, f, g, h){
+  # Number of sceneries
+  scenery <- length(data$Y)
+  
   # Objects where the evaluation metrics will be stored
   RIDGE <- NULL
   LASSO <- NULL
   INF_CRI <- NULL
   CRO_VAL <- NULL
   
-    for (i in 1:nrow(Scenery)) {
+    for (i in 1:scenery) {
     y <- data$Y[[i]] # Set the response variable
     x <- data$X[[i]] # Set the matrix containing the explanatory variables
     n <- length(y) # Sample size
