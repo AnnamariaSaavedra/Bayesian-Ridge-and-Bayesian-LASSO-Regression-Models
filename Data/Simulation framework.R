@@ -158,5 +158,5 @@ create_dataset <- function(Scenary) {
 
 data <- create_dataset(Scenary)
 
-save(data, file = "~/Downloads/Dataset - Simulation framework.RData")
+save(data, file = "~/Trabajo de grado/Simulation framework/Dataset - Simulation framework.RData")
 
