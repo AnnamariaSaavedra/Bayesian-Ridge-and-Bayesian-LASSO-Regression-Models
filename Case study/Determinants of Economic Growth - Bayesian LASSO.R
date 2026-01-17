@@ -87,7 +87,7 @@ h <- 1 # Rate parameter of gamma distribution
 
 # 3.2 Gibbs sampling algorithm implementation
 
-M3 <- Gibbs_lasso(y, x, e, f, g, h,
+M3 <- Gibbs_lasso(y, x, e, f, g, h, n, p,
                   n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
                   n_sams = 10000, # Set the number of effective samples
                   n_burn = 1000) # Set the number of burn-in samples
