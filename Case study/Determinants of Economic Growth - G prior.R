@@ -9,6 +9,7 @@ suppressMessages(suppressWarnings(library(tidyverse)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Import dataset
 
