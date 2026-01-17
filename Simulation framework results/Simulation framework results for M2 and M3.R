@@ -2,9 +2,13 @@
 
 set.seed(123)
 
-# 1. Load dataset
+# 1. Load dataset and load necessary libraries
 
 load("~/Trabajo de grado/Simulation framework/Dataset - Simulation framework.RData")
+
+suppressMessages(suppressWarnings(library(mvtnorm)))
+suppressMessages(suppressWarnings(library(GIGrvg)))
+suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Auxiliary functions
 
