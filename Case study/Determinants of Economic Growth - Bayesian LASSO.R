@@ -9,6 +9,7 @@ suppressMessages(suppressWarnings(library(tidyverse)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Import dataset
 
@@ -145,7 +146,7 @@ LAMBDA_SD <- round(sd(M3$LAMBDA), 4) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M3$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.4 Compute information criterion
+# 4.4 Compute information criterion and k-fold cross validation
 
 # Deviance Information Criterion
 
@@ -179,6 +180,46 @@ WAIC <- -2*LPPD + 2*pWAIC
 plot(M3$LL, type = "p", pch = ".", cex = 1.1, col = "firebrick2", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
      ylim = c(300, 340))
 abline(h = mean(M3$LL), lwd = 3, col = "firebrick2")
+
+# 10-fold cross validation
+
+cross_validation <- function(fold, y, x, p, 
+                             e, f, g, h){
+  id <- kfold(x = y, k = fold)
+  
+  # Objects where the mean absolute error, and the mean squared prediction error will be stored
+  mae <- NULL
+  mse <- NULL
+  
+  for (j in 1:fold) {
+    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
+    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
+    
+    # Fit Bayesian LASSO regression model
+    M3 <- Gibbs_lasso(y_train, x_train, e, f, g, h, n = length(y_train), p,
+                      n_burn = 1000,
+                      n_sams = 10000,
+                      n_skip = 10)
+    
+    # Posterior mean for beta
+    beta_lasso <- colMeans(M3$BETA)
+    
+    # Linear predictor
+    y_hat_lasso <- x_test%*%beta_lasso
+    
+    # Compute mean absolute error
+    mae_lasso <- mean(abs(y_test - y_hat_lasso))
+    
+    # Compute mean squared prediction error
+    mse_lasso <- mean((y_test - y_hat_lasso)^2)
+    
+    mae <- rbind(mae, mae_lasso)
+    mse <- rbind(mse, mse_lasso)
+  }
+  return(list(mae = mean(mae), mse = mean(mse)))
+}
+
+cross_validation_M3 <- cross_validation(fold = 10, y, x, p, e, f, g, h)
 
 # 5. Monte Carlo samples from the posterior predictive distribution of test statistics
 
