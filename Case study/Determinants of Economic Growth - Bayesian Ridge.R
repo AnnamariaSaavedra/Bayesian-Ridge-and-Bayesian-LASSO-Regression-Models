@@ -9,6 +9,7 @@ suppressMessages(suppressWarnings(library(tidyverse)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Import dataset
 
@@ -141,7 +142,7 @@ LAMBDA_SD <- round(sd(M2$LAMBDA), 4) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M2$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.4 Compute information criterion
+# 4.4 Compute information criterion and k-fold cross validation
 
 # Deviance Information Criterion
 
@@ -169,6 +170,46 @@ for (i in 1:n) {
 }
 
 WAIC <- -2*LPPD + 2*pWAIC
+
+# 10-fold cross validation
+
+cross_validation <- function(fold, y, x, p, 
+                             a, b, c, d){
+  id <- kfold(x = y, k = fold)
+  
+  # Objects where the mean absolute error, and the mean squared prediction error will be stored
+  mae <- NULL
+  mse <- NULL
+  
+  for (j in 1:fold) {
+    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
+    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
+    
+    # Fit Bayesian Ridge regression model
+    M2 <- Gibbs_ridge(y_train, x_train, a, b, c, d, n = length(y_train), p,
+                      n_burn = 1000,
+                      n_sams = 10000,
+                      n_skip = 10)
+    
+    # Posterior mean for beta
+    beta_ridge <- colMeans(M2$BETA)
+    
+    # Linear predictor
+    y_hat_ridge <- x_test%*%beta_ridge
+    
+    # Compute mean absolute error
+    mae_ridge <- mean(abs(y_test - y_hat_ridge))
+    
+    # Compute mean squared prediction error
+    mse_ridge <- mean((y_test - y_hat_ridge)^2)
+    
+    mae <- rbind(mae, mae_ridge)
+    mse <- rbind(mse, mse_ridge)
+  }
+  return(list(mae = mean(mae), mse = mean(mse)))
+}
+
+cross_validation_M2 <- cross_validation(fold = 10, y, x, p, a, b, c, d)
 
 # 4.5 Display log-likelihood chain
 
