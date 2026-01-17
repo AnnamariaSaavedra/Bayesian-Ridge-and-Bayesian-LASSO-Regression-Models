@@ -129,7 +129,7 @@ SIGMA2_SD <- round(sd(M1$SIGMA), 5) # Posterior standard deviation
 
 CI_SIGMA <- round(quantile(x = M1$SIGMA, probs = c(0.025, 0.975)), 5) # 95% credible interval
 
-# 4.3 Compute information criterion
+# 4.3 Compute information criterion and k-fold cross validation
 
 # Deviance Information Criterion
 
@@ -157,6 +157,48 @@ for (i in 1:n) {
 }
 
 WAIC <- -2*LPPD + 2*pWAIC
+
+# 10-fold cross validation
+
+cross_validation <- function(fold, y, x, p, 
+                             shape, rate, mu, Sigma){
+  id <- kfold(x = y, k = fold)
+  
+  # Objects where the mean absolute error, and the mean squared prediction error will be stored
+  mae <- NULL
+  mse <- NULL
+  
+  for (j in 1:fold) {
+    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
+    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
+    
+    # Fit G prior regression model
+    M1 <- G_prior(shape, rate, mu, Sigma, 
+                  n_sams = 10000, # Set the number of effective samples
+                  n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
+                  n_burn = 1000) # Set the number of burn-in samples
+    
+    
+    # Posterior mean for beta
+    beta <- colMeans(M1$BETA)
+    
+    # Linear predictor
+    y_hat <- x_test%*%beta
+
+    # Compute mean absolute error
+    mae_gprior <- mean(abs(y_test - y_hat))
+
+    # Compute mean squared prediction error
+    mse_gprior <- mean((y_test - y_hat)^2)
+
+    mae <- rbind(mae, mae_gprior)
+    mse <- rbind(mse, mse_gprior)
+  }
+  return(list(mae = mean(mae), mse = mean(mse)))
+}
+
+cross_validation_M1 <- cross_validation(fold = 10, y, x, p, 
+                                        shape, rate, mu, Sigma)
 
 # 4.5 Display log-likelihood chain
 
