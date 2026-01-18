@@ -1,6 +1,6 @@
-# Figure 18----
+# Figure 19----
 
-# Figure 18 displays the density function and the histogram of the response variable.
+# Figure 19 displays the density function and the histogram of the response variable.
 
 # 1. Load necessary library
 
@@ -9,7 +9,7 @@ suppressMessages(suppressWarnings(library(tidyverse)))
 
 # 2. Import dataset
 
-Data <- read_xlsx(path = "~/Trabajo de grado/Database.xlsx")
+Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 
 # 2.1 Select response variable and explanatory variables
 
