@@ -2,16 +2,16 @@
 
 # Figure 19 displays the density function and the histogram of the response variable.
 
-# 1. Load necessary library
+# 1. Load necessary libraries
 
 suppressMessages(suppressWarnings(library(readxl)))
 suppressMessages(suppressWarnings(library(tidyverse)))
 
-# 2. Import dataset
+# 2. Import database
 
 Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 
-# 2.1 Select response variable and explanatory variables
+# 2.1 Select the response variable
 
 Data <- Data %>%
   select(CODE, # Country code
@@ -55,9 +55,6 @@ Data <- Data[complete.cases(Data), ]
 
 y <- Data$GR6096 # Set the response variable
 
-x <- Data %>%
-  select(-c(CODE, GR6096)) # Set the matrix containing the explanatory variables
-
 # 3. Plot histogram
 
 hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), 
@@ -66,3 +63,27 @@ hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08),
 # Density plot using a smooth kernel density plot
 lines(density(x = y), lwd = 2, col = "darkorange1")
 
+# Figure 20----
+
+# Figure 20 displays the density function and the histogram of the response variable.
+
+# 1. Load necessary libraries
+
+suppressMessages(suppressWarnings(library(readr)))
+suppressMessages(suppressWarnings(library(tidyverse)))
+
+# 2. Import database
+
+Data <- read_csv("~/Trabajo de grado/Database - Case study 2.txt")
+
+# 2.1 Select the response variable
+
+y <- Data$Wage # Set the response variable
+
+# 3. Plot histogram
+
+hist(x = y, freq = FALSE,
+     ylab = "Densidad", main = "", xlim = c(8, 20), ylim = c(0, 2),
+     col = alpha("grey", 0.3))
+# Density plot using a smooth kernel density plot
+lines(density(x = y), lwd = 2, col = "indianred1")
