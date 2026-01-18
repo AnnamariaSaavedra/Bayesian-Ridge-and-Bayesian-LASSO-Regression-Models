@@ -287,3 +287,52 @@ ppp <- NULL
 for (j in 1:length(ts_hat)) {
   ppp[j] <- round(mean(ts[,j] < ts_hat[j]), 3)
 }
+
+# 6. Posterior predictive density estimate
+
+posterior_density_estimate <- function(model, 
+                                       y_seq, # Define a sequence of y values for density estimation
+                                       X, # Define a grid of x values
+                                       n, p) {
+  B <- length(model$SIGMA)
+  M <- length(y_seq)
+  
+  # Object where density estimates will be stored
+  FE <- matrix(NA, nrow = B, ncol = M)
+  
+  for (b in 1:B) {
+    beta_b <- model$BETA[b,]
+    sigma2_b <- model$SIGMA[b]
+    
+    for (i in 1:M) {
+      FE[b, i] <- dnorm(y_seq[i], mean = X[i,]%*%beta_b, sd = sqrt(sigma2_b))
+    }
+  }
+  
+  f_hat <- colMeans(FE)  # Posterior mean density
+  f_inf <- apply(FE, 2, quantile, probs = 0.025)  # 2.5% credible interval
+  f_sup <- apply(FE, 2, quantile, probs = 0.975)  # 97.5% credible interval
+  
+  return(list(f_hat = f_hat, f_inf = f_inf, f_sup = f_sup))
+}
+
+# Define a sequence of y values for density estimation
+y_seq <- seq(min(y), max(y), length.out = 150)
+
+# Define a grid of x values
+X <- matrix(data = NA, nrow = length(M3$SIGMA), ncol = p)
+for (j in 1:p) {
+  X[,j] <- seq(from = min(x[,j]), to = max(x[,j]), length.out = length(M3$SIGMA)) 
+}
+
+# Compute posterior density estimate and credible intervals
+density_estimate <- posterior_density_estimate(M3, y_seq, X, n, p)
+
+f_hat <- density_estimate$f_hat
+
+# Plot the histogram
+hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), 
+     ylab = "Densidad", main = "",
+     col = alpha("grey", 0.3))
+# Overlay the posterior density estimate as a blue line
+lines(y_seq, f_hat, lwd = 2, col = "firebrick2")
