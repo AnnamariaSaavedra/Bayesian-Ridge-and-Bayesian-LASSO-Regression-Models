@@ -313,8 +313,6 @@ for (j in 1:p) {
 density_estimate <- posterior_density_estimate(M1, y_seq, X, n, p)
 
 f_hat <- density_estimate$f_hat
-f_inf <- density_estimate$f_inf
-f_sup <- density_estimate$f_sup
 
 # Plot the histogram
 hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), 
