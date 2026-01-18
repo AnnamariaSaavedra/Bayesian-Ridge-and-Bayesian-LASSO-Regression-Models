@@ -323,7 +323,7 @@ y_seq <- seq(min(y), max(y), length.out = 150)
 x_seq <- colMeans(x)
 
 # Compute posterior density estimate and credible intervals
-density_estimate <- posterior_density_estimate(M2, y_seq, x_seq)
+density_estimate <- posterior_density_estimate(M3, y_seq, x_seq)
 
 f_hat <- density_estimate$f_hat
 f_inf <- density_estimate$f_inf
