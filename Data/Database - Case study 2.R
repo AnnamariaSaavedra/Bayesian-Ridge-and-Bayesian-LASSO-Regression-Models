@@ -12,7 +12,7 @@ suppressMessages(suppressWarnings(library(fastDummies)))
 
 # Household and Respondent Characteristics
 
-Home <- read_delim("~/Downloads/Características y composición del hogar.CSV", 
+Home <- read_delim("~/Downloads/Características y composición del hogar.CSV", 
                     delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
 Home <- Home %>%
@@ -23,7 +23,17 @@ Home <- Home %>%
          P6087, # Father's highest level of educational attainment
          P6088) %>% # Mother's highest level of educational attainment
   # Create the primary key that uniquely identifies each observation
-  unite("ID", c(DIRECTORIO, SECUENCIA_ENCUESTA, SECUENCIA_P, ORDEN), sep = "", remove = TRUE)
+  unite("ID", c(DIRECTORIO, SECUENCIA_ENCUESTA, SECUENCIA_P, ORDEN), sep = "", remove = TRUE) 
+
+Department <- read_delim("~/Downloads/Datos de la vivienda.CSV", 
+                         delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+Department <- Department %>%
+  select(DIRECTORIO, SECUENCIA_ENCUESTA, SECUENCIA_P, ORDEN, # Primary key that uniquely identifies each observation
+         P1_DEPARTAMENTO) %>% # Residence city
+  # Create the primary key that uniquely identifies each observation
+  unite("ID", c(DIRECTORIO, SECUENCIA_ENCUESTA, SECUENCIA_P, ORDEN), sep = "", remove = TRUE) %>%
+  filter(P1_DEPARTAMENTO == "11") # Respondents residing in Bogota
 
 # Educational attainment
 
@@ -56,12 +66,13 @@ Labor <- Labor %>%
 
 Data <- merge(x = Labor, y = Education, by = "ID", all.x = TRUE)
 Data <- merge(x = Data, y = Home, by = "ID", all.x = TRUE)
+Data <- merge(x = Data, y = Department, by = "ID", all.x = TRUE)
 
 Data <- Data %>%
   filter(P6435 == "1" | P6435 == "2") %>%
   # Adjust the survey response for those who do not report the information
   filter(P6087 != "10" & P6088 != "10") %>%
-  filter(!is.na(P6087) & !is.na(P6088)) %>%
+  filter(!is.na(P6087) & !is.na(P6088) & !is.na(P1_DEPARTAMENTO)) %>%
   mutate(P8626S1 = case_when(P8626S1 == 98 ~ 0,
                              TRUE ~ P8626S1)) %>%
   mutate(P8628S1 = case_when(P8628S1 == 98 ~ 0,
@@ -95,7 +106,7 @@ Data$P8587 <- relevel(Data$P8587, ref = "5")
 
 Data <- Data %>%
   select(P6020, P6040, P6080, P6087, P6088, P6450, P8587, Wage) %>%
-  mutate(`P6040` = P6040^2)
+  mutate(`P6040_2` = P6040^2)
 
 Data <- dummy_cols(.data = Data,
                    select_columns = c("P6020", "P6080", "P6087", "P6088", "P6450", "P8587"),
