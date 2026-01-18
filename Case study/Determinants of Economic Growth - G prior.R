@@ -15,7 +15,7 @@ suppressMessages(suppressWarnings(library(dismo)))
 
 Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 
-# 2.1 Select response variable and explanatory variables
+# 2.1 Select the response variable and explanatory variables
 
 Data <- Data %>%
   select(CODE, # Country code
@@ -109,8 +109,6 @@ EEMC_sigma <- sd(M1$SIGMA)/sqrt(TEM_sigma); round(summary(EEMC_sigma), 3) # sigm
 # 4. Bayesian inference
 
 # 4.1 Bayesian inference for beta
-
-colnames(M1$BETA) <- paste0("beta", 1:p)
 
 BETA_MEAN <- round(apply(M1$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
 
