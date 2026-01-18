@@ -15,7 +15,7 @@ suppressMessages(suppressWarnings(library(dismo)))
 
 Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 
-# 2.1 Select response variable and explanatory variables
+# 2.1 Select the response variable and explanatory variables
 
 Data <- Data %>%
   select(CODE, # Country code
@@ -287,8 +287,8 @@ for (j in 1:length(ts_hat)) {
 
 posterior_density_estimate <- function(model, 
                                        y_seq, # Define a sequence of y values for density estimation
-                                       X, # Define a grid of x values
-                                       n, p) {
+                                       x # Define a grid of x values
+                                       ) {
   B <- length(model$SIGMA)
   M <- length(y_seq)
   
@@ -300,7 +300,7 @@ posterior_density_estimate <- function(model,
     sigma2_b <- model$SIGMA[b]
     
     for (i in 1:M) {
-      FE[b, i] <- dnorm(y_seq[i], mean = X[i,]%*%beta_b, sd = sqrt(sigma2_b))
+      FE[b, i] <- dnorm(y_seq[i], mean = x%*%beta_b, sd = sqrt(sigma2_b))
     }
   }
   
@@ -315,19 +315,19 @@ posterior_density_estimate <- function(model,
 y_seq <- seq(min(y), max(y), length.out = 150)
 
 # Define a grid of x values
-X <- matrix(data = NA, nrow = length(y_seq), ncol = p)
-for (j in 1:p) {
-  X[,j] <- seq(from = min(x[,j]), to = max(x[,j]), length.out = length(y_seq)) 
-}
+x_seq <- colMeans(x)
 
 # Compute posterior density estimate and credible intervals
-density_estimate <- posterior_density_estimate(M2, y_seq, X, n, p)
+density_estimate <- posterior_density_estimate(M2, y_seq, x_seq)
 
 f_hat <- density_estimate$f_hat
+f_inf <- density_estimate$f_inf
+f_sup <- density_estimate$f_sup
 
 # Plot the histogram
-hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), 
+hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), ylim = c(0, 50),
      ylab = "Densidad", main = "",
      col = alpha("grey", 0.3))
-# Overlay the posterior density estimate as a green line
+# Overlay the posterior density estimate as a blue line
+polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("#00CD66", 0.3), border = NA)
 lines(y_seq, f_hat, lwd = 2, col = "#00CD66")
