@@ -12,7 +12,7 @@ suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(dismo)))
 
-# 2. Import dataset
+# 2. Import database
 
 Data <- read_xlsx(path = "~/Trabajo de grado/Database.xlsx")
 
