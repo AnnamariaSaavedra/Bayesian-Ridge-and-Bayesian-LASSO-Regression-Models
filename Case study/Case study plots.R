@@ -83,7 +83,7 @@ y <- Data$Wage # Set the response variable
 # 3. Plot histogram
 
 hist(x = y, freq = FALSE,
-     ylab = "Densidad", main = "", xlim = c(8, 20), ylim = c(0, 2),
+     ylab = "Densidad", main = "", xlim = c(10, 18), ylim = c(0, 1),
      col = alpha("grey", 0.3))
 # Density plot using a smooth kernel density plot
 lines(density(x = y), lwd = 2, col = "indianred1")
