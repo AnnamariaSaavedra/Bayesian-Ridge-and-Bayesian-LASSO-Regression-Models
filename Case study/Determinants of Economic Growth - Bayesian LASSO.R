@@ -320,9 +320,9 @@ posterior_density_estimate <- function(model,
 y_seq <- seq(min(y), max(y), length.out = 150)
 
 # Define a grid of x values
-X <- matrix(data = NA, nrow = length(M3$SIGMA), ncol = p)
+X <- matrix(data = NA, nrow = length(y_seq), ncol = p)
 for (j in 1:p) {
-  X[,j] <- seq(from = min(x[,j]), to = max(x[,j]), length.out = length(M3$SIGMA)) 
+  X[,j] <- seq(from = min(x[,j]), to = max(x[,j]), length.out = length(y_seq)) 
 }
 
 # Compute posterior density estimate and credible intervals
