@@ -37,27 +37,6 @@ beta <- coeftest(OLS, vcov. = vcovHC, type = "HC3")[,1] # Heteroskedasticity-rob
 
 CI <- round(coefci(OLS, vcov. = vcovHC, type = "HC3"), 5) # 95% confidence interval
 
-Plot <- data.frame(Position = 1:p, Estimate = beta, Lower = CI[,1],
-                   Upper = CI[,2])
-
-Plot_OLS <- ggplot(Plot, aes(x = Position)) +
-  geom_hline(yintercept = 0, color = "gray") +
-  geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.1) +
-  geom_point(aes(y = Estimate, color = "Frecuentista"), shape = 16, size = 1.5) +
-  labs(
-    main = "Modelo de regresión normal",
-    sub = "Mínimos cuadrados ordinarios",
-    x = "Coeficiente estimado",
-    y = expression(beta[j]),
-    color = "Método de estimación"
-  ) +
-  scale_x_continuous(breaks = 1:p) +
-  scale_color_manual(
-    values = c("Frecuentista" = "maroon3"),
-    labels = c("Frecuentista" = "MCO")
-  ) +
-  theme_minimal()
-
 # 4. Hyperparameter elicitation
 
 beta_OLS <- solve(t(x)%*%x)%*%t(x)%*%y
@@ -190,9 +169,9 @@ legend("topright", legend = c(expression(hat(beta)[1]),
                rainbow(8)[8]), 
        lty = 1, bty = "n", cex = 1)
 
-# Figure 7----
+# Figure 6----
 
-# Figure 7 corresponds to realizations from a $\textsf{DP}(\alpha, G_0$), 
+# Figure 6 corresponds to realizations from a $\textsf{DP}(\alpha, G_0$), 
 # for $\alpha \in \{ 1, 10, 100 \}$ and $G_0 = \textsf{N}(0,1)$. 
 # The solid black line corresponds to $G_0$, while the color lines represent the 
 # realizations.
@@ -290,9 +269,9 @@ plot(x, G, type = "l", xlim = c(-3, 3), col = "darkorchid2",
      xlab = "x", ylab = "G(x)", main = "")
 curve(G0, from = -3, to = 3, n = 1000, lwd = 2, add = TRUE) # Add the base measure G0 as reference
 
-# Figure 10----
+# Figure 9----
 
-# Figure 10 corresponds to a realization from a $\textsf{GEM}(\alpha$)
+# Figure 9 corresponds to a realization from a $\textsf{GEM}(\alpha$)
 # for $\alpha = \{ 0,1, 1, 10, 100 \}$ (Dilber, 2018).
 
 # 1. Load necessary library
