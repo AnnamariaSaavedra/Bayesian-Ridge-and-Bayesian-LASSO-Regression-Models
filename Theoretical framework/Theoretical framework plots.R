@@ -84,8 +84,6 @@ M1 <- G_prior(shape, rate, mu, Sigma,
 
 # 6. Bayesian inference for beta
 
-colnames(M1$BETA) <- paste0("beta", 1:p)
-
 BETA_HAT <- apply(M1$BETA, MARGIN = 2, FUN = mean) # Posterior mean
 
 CI <- apply(M1$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)) # 95% credible interval
@@ -111,10 +109,12 @@ Plot_Bayesian <- ggplot(Data, aes(x = 1:p)) +
   scale_y_continuous(breaks = seq(-200, 400, by = 100)) + 
   scale_color_manual(
     values = c("Bayesiano" = "gold1", "Frecuentista" = "firebrick1"),
-    labels = c("Bayesiano" = "Media posterior", "Frecuentista" = "Mínimos cuadrados ordinarios")
+    labels = c("Bayesiano" = "Media posterior", "Frecuentista" = "OLS")
   ) +
-  theme_minimal() +
-  theme(legend.position='bottom', legend.text = element_text(size = 10))
+  theme_bw(base_size = 14) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position='bottom', legend.text = element_text(size = 14))
 
 # Figure 2----
 
