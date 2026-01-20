@@ -205,7 +205,7 @@ for (i in alpha) {
     a[n + 1] <- i * (1 - G0(x[n])) # Last component of the parameter vector from the Dirichlet distribution
     
     for (j in 2:n) {
-      a[j] <- alpha[1] * (G0(x[j]) - G0(x[j - 1]))
+      a[j] <- i * (G0(x[j]) - G0(x[j - 1]))
     }
     
     # Sample from Dirichlet distribution
