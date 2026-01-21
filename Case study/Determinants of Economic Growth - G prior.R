@@ -314,7 +314,7 @@ f_sup <- density_estimate$f_sup
 # Plot the histogram
 hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), ylim = c(0, 50),
      ylab = "Densidad", main = "",
-     col = alpha("grey", 0.3))
+     col = alpha("grey", 0.3), cex.label = 1.5, cex.axis  = 1.5)
 # Overlay the posterior density estimate as a blue line
 polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("deepskyblue1", 0.3), border = NA)
 lines(y_seq, f_hat, lwd = 2, col = "deepskyblue1")
