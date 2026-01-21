@@ -106,13 +106,11 @@ EEMC_beta <- apply(X = M2$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summ
 
 EEMC_sigma2 <- sd(M2$SIGMA)/sqrt(TEM_sigma2); round(summary(EEMC_sigma2), 4) # sigma2
 
-EEMC_lambda <- sd(M2$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 3) # lambda
+EEMC_lambda <- sd(M2$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 4) # lambda
 
 # 4. Bayesian inference
 
 # 4.1 Bayesian inference for beta
-
-colnames(M2$BETA) <- paste0("beta", 1:p)
 
 BETA_MEAN <- round(apply(M2$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
 
