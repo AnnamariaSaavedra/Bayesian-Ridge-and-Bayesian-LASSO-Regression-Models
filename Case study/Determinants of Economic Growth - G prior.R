@@ -102,9 +102,9 @@ TEM_sigma <- coda::effectiveSize(M1$SIGMA); summary(TEM_sigma) # sigma2
 
 # Compute the Monte Carlo standard error for model parameters
 
-EEMC_beta <- apply(X = M1$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summary(EEMC_beta), 3) # beta
+EEMC_beta <- apply(X = M1$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summary(EEMC_beta), 4) # beta
 
-EEMC_sigma <- sd(M1$SIGMA)/sqrt(TEM_sigma); round(summary(EEMC_sigma), 3) # sigma2
+EEMC_sigma <- sd(M1$SIGMA)/sqrt(TEM_sigma); round(summary(EEMC_sigma), 4) # sigma2
 
 # 4. Bayesian inference
 
