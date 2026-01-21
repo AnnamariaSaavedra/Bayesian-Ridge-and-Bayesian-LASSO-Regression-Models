@@ -105,19 +105,17 @@ TEM_lambda <- coda::effectiveSize(M3$LAMBDA); summary(TEM_lambda) # lambda
 
 # Compute the Monte Carlo standard error for model parameters
 
-EEMC_beta <- apply(X = M3$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summary(EEMC_beta), 5) # beta
+EEMC_beta <- apply(X = M3$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summary(EEMC_beta), 4) # beta
 
-EEMC_sigma2 <- sd(M3$SIGMA)/sqrt(TEM_sigma2); round(summary(EEMC_sigma2), 5) # sigma2
+EEMC_sigma2 <- sd(M3$SIGMA)/sqrt(TEM_sigma2); round(summary(EEMC_sigma2), 4) # sigma2
 
-EEMC_tau <- sd(M3$TAU)/sqrt(TEM_tau); round(summary(EEMC_tau), 3) # tau2
+EEMC_tau <- sd(M3$TAU)/sqrt(TEM_tau); round(summary(EEMC_tau), 4) # tau2
 
-EEMC_lambda <- sd(M3$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 3) # lambda
+EEMC_lambda <- sd(M3$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 4) # lambda
 
 # 4. Bayesian inference
 
 # 4.1 Bayesian inference for beta
-
-colnames(M3$BETA) <- paste0("beta", 1:p)
 
 BETA_MEAN <- round(apply(M3$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
 
