@@ -59,7 +59,7 @@ y <- Data$GR6096 # Set the response variable
 
 hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), 
      ylab = "Densidad", main = "",
-     col = alpha("grey", 0.3))
+     col = alpha("grey", 0.3), cex.label = 1.5, cex.axis  = 1.5)
 # Density plot using a smooth kernel density plot
 lines(density(x = y), lwd = 2, col = "darkorange1")
 
@@ -84,6 +84,6 @@ y <- Data$Wage # Set the response variable
 
 hist(x = y, freq = FALSE,
      ylab = "Densidad", main = "", xlim = c(10, 18), ylim = c(0, 1),
-     col = alpha("grey", 0.3))
+     col = alpha("grey", 0.3), cex.label = 1.5, cex.axis  = 1.5)
 # Density plot using a smooth kernel density plot
 lines(density(x = y), lwd = 2, col = "indianred1")
