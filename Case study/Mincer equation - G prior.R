@@ -1,0 +1,280 @@
+# 0. Set seed
+
+rm(list=ls()); set.seed(123)
+
+# 1. Load necessary libraries
+
+suppressMessages(suppressWarnings(library(readr)))
+suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(mvtnorm)))
+suppressMessages(suppressWarnings(library(coda)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(dismo)))
+
+# 2. Import database
+
+Data <- read_csv("~/Downloads/Database - Case study 2.txt")
+
+# 2.1 Select the response variable and explanatory variables
+
+y <- Data$Wage # Set the response variable
+
+x <- Data %>%
+  select(-c(Wage)) %>% # Set the matrix containing the explanatory variables
+  mutate(INT = 1) %>% # Create the intercept column
+  as.matrix()
+
+n <- length(y) # Sample size
+
+p <- ncol(x) # Number of explanatory variables
+
+# 3. G prior
+
+# 3.1 Hyperparameter elicitation
+
+beta_OLS <- solve(t(x)%*%x)%*%t(x)%*%y
+
+residuals <- y - x%*%beta_OLS
+
+sigma2_OLS <- sum(residuals^2)/(n - p)
+
+nu_0 <- 1
+
+sigma2_0 <- sigma2_OLS
+
+g <- n
+
+# Before executing the following code, G prior.r must be executed, since it displays
+# the Monte Carlo algorithm
+
+# 3.2 Monte Carlo algorithm implementation
+
+M1 <- G_prior(shape, rate, mu, Sigma, 
+              n_sams = 10000, # Set the number of effective samples
+              n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
+              n_burn = 1000) # Set the number of burn-in samples
+
+# Compute the effective sample size for model parameters
+
+TEM_beta <- coda::effectiveSize(M1$BETA); summary(TEM_beta) # beta
+
+TEM_sigma <- coda::effectiveSize(M1$SIGMA); summary(TEM_sigma) # sigma2
+
+# Compute the Monte Carlo standard error for model parameters
+
+EEMC_beta <- apply(X = M1$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summary(EEMC_beta), 4) # beta
+
+EEMC_sigma <- sd(M1$SIGMA)/sqrt(TEM_sigma); round(summary(EEMC_sigma), 4) # sigma2
+
+# 4. Bayesian inference
+
+# 4.1 Bayesian inference for beta
+
+BETA_MEAN <- round(apply(M1$BETA, MARGIN = 2, FUN = mean), 3) # Posterior mean
+
+BETA_MEDIAN <- round(apply(M1$BETA, MARGIN = 2, FUN = median), 3) # Posterior median
+
+BETA_SD <- round(apply(M1$BETA, MARGIN = 2, FUN = sd), 3) # Posterior standard deviation
+
+CI_BETA <- round(apply(M1$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)), 3) # 95% credible interval
+
+# 4.2 Bayesian inference for sigma2
+
+SIGMA2_MEAN <- round(mean(M1$SIGMA), 3) # Posterior mean
+
+SIGMA2_MEDIAN <- round(median(M1$SIGMA), 3) # Posterior median
+
+SIGMA2_SD <- round(sd(M1$SIGMA), 3) # Posterior standard deviation
+
+CI_SIGMA <- round(quantile(x = M1$SIGMA, probs = c(0.025, 0.975)), 3) # 95% credible interval
+
+# 4.3 Compute information criterion and k-fold cross validation
+
+# Deviance Information Criterion
+
+LL_HAT <- sum(dnorm(x = y, mean = x%*%BETA_MEAN, sd = sqrt(SIGMA2_MEAN), log = TRUE))
+
+LL_B <- M1$LL
+
+pDIC <- 2*(LL_HAT - mean(LL_B))
+
+DIC <- -2*LL_HAT + 2*pDIC
+
+# Watanabe-Akaike Information Criterion
+
+LPPD <- 0
+
+pWAIC <- 0
+
+for (i in 1:n) {
+  # LPPD
+  TMP <- dnorm(x = y[i], mean = x[i,]%*%t(M1$BETA), sd = sqrt(M1$SIGMA))
+  LPPD <- LPPD + log(mean(TMP))
+  # pWAIC
+  TMP_2 <- dnorm(x = y[i], mean = x[i,]%*%t(M1$BETA), sd = sqrt(M1$SIGMA), log = TRUE)
+  pWAIC <- pWAIC + 2*(log(mean(TMP)) - mean(TMP_2))
+}
+
+WAIC <- -2*LPPD + 2*pWAIC
+
+# 10-fold cross validation
+
+cross_validation <- function(fold, y, x, p, 
+                             shape, rate, mu, Sigma){
+  id <- kfold(x = y, k = fold)
+  
+  # Objects where the mean absolute error, and the mean squared prediction error will be stored
+  mae <- NULL
+  mse <- NULL
+  
+  for (j in 1:fold) {
+    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
+    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
+    
+    # Fit G prior regression model
+    M1 <- G_prior(shape, rate, mu, Sigma, 
+                  n_sams = 10000, # Set the number of effective samples
+                  n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
+                  n_burn = 1000) # Set the number of burn-in samples
+    
+    
+    # Posterior mean for beta
+    beta <- colMeans(M1$BETA)
+    
+    # Linear predictor
+    y_hat <- x_test%*%beta
+
+    # Compute mean absolute error
+    mae_gprior <- mean(abs(y_test - y_hat))
+
+    # Compute mean squared prediction error
+    mse_gprior <- mean((y_test - y_hat)^2)
+
+    mae <- rbind(mae, mae_gprior)
+    mse <- rbind(mse, mse_gprior)
+  }
+  return(list(mae = mean(mae), mse = mean(mse)))
+}
+
+cross_validation_M1 <- cross_validation(fold = 10, y, x, p, 
+                                        shape, rate, mu, Sigma)
+
+# 4.5 Display log-likelihood chain
+
+plot(M1$LL, type = "p", pch = ".", cex = 1.1, col = "deepskyblue2", xlab = "Iteración", ylab = "Log-verosimilitud", main = "")
+abline(h = mean(M1$LL), lwd = 3, col = "deepskyblue3")
+
+# 5. Monte Carlo samples from the posterior predictive distribution of test statistics
+
+# Create test statistics function
+
+test_stats <- function(x) {
+  c(mean = mean(x),
+    median = median(x),
+    sd = sd(x),
+    iqr = diff(quantile(x, c(0.25, 0.75))),
+    min = min(x),
+    max = max(x)
+  )
+}
+
+ts_display <- c("Media", "Mediana", "Desviación estándar", "Rango intercuartílico",
+                "Mínimo", "Máximo")
+
+ts <- NULL # Object where the test statistics will be stored
+
+# Simulated statistics
+
+for (b in 1:length(M1$SIGMA)) {
+  # Samples from the posterior distribution
+  beta <- M1$BETA[b, ]
+  sigma2 <- M1$SIGMA[b]
+  
+  # Posterior predictive datasets, each of size n
+  y_tilde <- rnorm(n = n, mean = x%*%beta, sd = sqrt(sigma2))
+  
+  # Samples from the posterior predictive distribution of test statistics
+  ts <- rbind(ts, test_stats(y_tilde)) # Compute test statistics
+}
+
+ts_hat <- test_stats(y) # Observed test statistics
+
+# Comparison plots between simulated and observed test statistics
+
+par(mfrow = c(3, 2), mar = c(3, 3, 2, 1), mgp = c(1.75, 0.75, 0))
+for (j in 1:length(ts_hat)) {
+  test_statistics  <- ts[, j]
+  test_statistics_hat <- ts_hat[j]
+  
+  # Plot histogram
+  hist(
+    x = test_statistics, freq = FALSE, nclass = 30,
+    col = "gray90", border = "gray90",
+    xlab = ts_display[j], ylab = "Densidad",
+    main = ts_display[j]
+  )
+  
+  abline(
+    v = quantile(test_statistics, c(0.025, 0.5, 0.975)),
+    col = c(4, 2, 4), lty = c(4, 2, 4), lwd = c(2, 1, 2)
+  )
+  
+  abline(v = test_statistics_hat, lwd = 2)
+}
+
+# Compute posterior predictive p-value
+
+ppp <- NULL
+
+for (j in 1:length(ts_hat)) {
+  ppp[j] <- round(mean(ts[,j] < ts_hat[j]), 5)
+}
+
+# 6. Posterior predictive density estimate
+
+posterior_density_estimate <- function(model, 
+                                       y_seq, # Define a sequence of y values for density estimation
+                                       x # Define a grid of x values
+                                       ) {
+  B <- length(model$SIGMA)
+  M <- length(y_seq)
+  
+  # Object where density estimates will be stored
+  FE <- matrix(NA, nrow = B, ncol = M)
+  
+  for (b in 1:B) {
+    beta_b <- model$BETA[b,]
+    sigma2_b <- model$SIGMA[b]
+    
+    for (i in 1:M) {
+      FE[b, i] <- dnorm(y_seq[i], mean = x%*%beta_b, sd = sqrt(sigma2_b))
+    }
+  }
+  
+  f_hat <- colMeans(FE)  # Posterior mean density
+  f_inf <- apply(FE, 2, quantile, probs = 0.025)  # 2.5% credible interval
+  f_sup <- apply(FE, 2, quantile, probs = 0.975)  # 97.5% credible interval
+  
+  return(list(f_hat = f_hat, f_inf = f_inf, f_sup = f_sup))
+}
+
+# Define a sequence of y values for density estimation
+y_seq <- seq(min(y), max(y), length.out = 150)
+
+# Define a grid of x values
+x_seq <- colMeans(x)
+
+# Compute posterior density estimate and credible intervals
+density_estimate <- posterior_density_estimate(M1, y_seq, x_seq)
+
+f_hat <- density_estimate$f_hat
+f_inf <- density_estimate$f_inf
+f_sup <- density_estimate$f_sup
+
+# Plot the histogram
+hist(x = y, freq = FALSE, xlim = c(11, 18), ylim = c(0, 1),
+     ylab = "Densidad", main = "",
+     col = alpha("grey", 0.3), cex.label = 1.5, cex.axis  = 1.5)
+# Overlay the posterior density estimate as a blue line
+polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("deepskyblue1", 0.3), border = NA)
+lines(y_seq, f_hat, lwd = 2, col = "deepskyblue1")
