@@ -230,7 +230,7 @@ hat_np <- function(model, K, p, ite){
 
 inference <- hat_np(M4, K = 1, p, ite = 10000)$inference
 
-# 4.3.3 Bayesian inference for lambda
+# Bayesian inference for lambda
 
 LAMBDA_MEAN <- round(mean(M4$LAMBDA), 4) # Posterior mean
 
@@ -240,7 +240,7 @@ LAMBDA_SD <- round(sd(M4$LAMBDA), 4) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M4$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.3.4 Bayesian inference for alpha
+# Bayesian inference for alpha
 
 ALPHA_MEAN <- round(mean(M4$ALPHA), 4) # Posterior mean
 
