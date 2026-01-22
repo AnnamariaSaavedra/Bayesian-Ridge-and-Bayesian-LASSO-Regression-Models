@@ -107,6 +107,8 @@ abline(h = mean(M4$LL), lwd = 3, col = "darkorchid3")
 
 # 4.2 Inference on the number of clusters
 
+K <- apply(M4$XI, 1, function(x) length(unique(x))) # Compute the number of clusters at each iteration
+
 K_table <- as.data.frame(table(K)/length(K))
 
 # Plot the posterior distribution of K
