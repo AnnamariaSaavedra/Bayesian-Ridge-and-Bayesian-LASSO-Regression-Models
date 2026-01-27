@@ -28,7 +28,7 @@ sample_sigma2_ridge <- function(beta, y, x, a, b, n){
 
 # Full conditional distribution of lambda
 
-sample_lambda_ridge <- function(beta, c, d, n){
+sample_lambda_ridge <- function(beta, c, d, p){
   shape <- (0.5*p) + c # Shape parameter
   rate <- (0.5*(sum(beta^2))) + d # Rate parameter
   
