@@ -88,7 +88,7 @@ d <- 1 # Rate parameter of gamma distribution
 # 3.2 Gibbs sampling algorithm implementation
 
 M2 <- Gibbs_ridge(y, x, a, b, c, d, n, p,
-                  n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
+                  n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling
                   n_sams = 10000, # Set the number of effective samples
                   n_burn = 1000) # Set the number of burn-in samples
 
