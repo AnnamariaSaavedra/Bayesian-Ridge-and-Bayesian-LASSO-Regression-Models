@@ -2,7 +2,7 @@
 
 set.seed(123)
 
-# 1. Load dataset and load necessary libraries
+# 1. Load dataset and necessary libraries
 
 load("~/Trabajo de grado/Simulation framework/Dataset - Simulation framework.RData")
 
