@@ -110,11 +110,11 @@ simulation_ridge <- function(model, hyperparameter, p)
   
   for (i in 1:nrow(hyperparameter)) {
     # Inference for the i-th simulation scenery
-    BETA_HAT <- apply(M2$BETA[i,,], MARGIN = 2, FUN = mean) # Posterior mean for beta
-    CI_BETA <- apply(M2$BETA[i,,], MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)) # 95% credible interval
+    BETA_HAT <- apply(model$BETA[i,,], MARGIN = 2, FUN = mean) # Posterior mean for beta
+    CI_BETA <- apply(model$BETA[i,,], MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)) # 95% credible interval
     
-    SIGMA2_HAT <- mean(M2$SIGMA[i,,]) # Posterior mean for sigma2
-    CI_SIGMA <- quantile(x = M2$SIGMA[i,,], probs = c(0.025, 0.975)) # 95% credible interval)
+    SIGMA2_HAT <- mean(model$SIGMA[i,,]) # Posterior mean for sigma2
+    CI_SIGMA <- quantile(x = model$SIGMA[i,,], probs = c(0.025, 0.975)) # 95% credible interval)
     
     for (j in 1:p) {
       table[j,] <- cbind(i, j, BETA_HAT[j], CI_BETA[1, j], CI_BETA[2, j])
