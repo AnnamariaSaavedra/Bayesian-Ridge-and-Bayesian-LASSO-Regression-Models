@@ -96,7 +96,7 @@ m <- 1 # Shape parameter of gamma distribution
 M5 <- Gibbs_lassonp(y,
                     n_burn = 1000, # Set the number of burn-in samples
                     n_sams = 10000, # Set the number of effective samples
-                    n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
+                    n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling
                     e, f, g, h, l, m)
 
 # 4. Bayesian inference
