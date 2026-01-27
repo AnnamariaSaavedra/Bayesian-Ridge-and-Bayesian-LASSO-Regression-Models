@@ -94,7 +94,7 @@ m <- 1 # Shape parameter of gamma distribution
 M4 <- Gibbs_ridgenp(y,
                     n_burn = 1000, # Set the number of burn-in samples
                     n_sams = 10000, # Set the number of effective samples
-                    n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
+                    n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling
                     a, b, c, d, l, m)
 
 # 4. Bayesian inference
