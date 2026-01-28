@@ -30,6 +30,8 @@ n <- length(y) # Sample size
 
 p <- ncol(x) # Number of explanatory variables
 
+# 3. Bayesian LASSO regression
+
 # 3.1 Hyperparameter elicitation
 
 e <- 3 # Shape parameter of inverse-gamma distribution
