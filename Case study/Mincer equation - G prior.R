@@ -5,7 +5,7 @@ rm(list=ls()); set.seed(123)
 # 1. Load necessary libraries
 
 suppressMessages(suppressWarnings(library(readr)))
-suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
@@ -20,7 +20,7 @@ Data <- read_csv("~/Downloads/Database - Case study 2.txt")
 y <- Data$Wage # Set the response variable
 
 x <- Data %>%
-  select(-c(Wage)) %>% # Set the matrix containing the explanatory variables
+  dplyr::select(-c(Wage)) %>% # Set the matrix containing the explanatory variables
   mutate(INT = 1) %>% # Create the intercept column
   as.matrix()
 
@@ -274,7 +274,7 @@ f_sup <- density_estimate$f_sup
 # Plot the histogram
 hist(x = y, freq = FALSE, xlim = c(11, 18), ylim = c(0, 1),
      ylab = "Densidad", main = "",
-     col = alpha("grey", 0.3), cex.label = 1.5, cex.axis  = 1.5)
+     col = alpha("grey", 0.3), cex.lab = 1.5, cex.axis  = 1.5)
 # Overlay the posterior density estimate as a blue line
 polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("deepskyblue1", 0.3), border = NA)
 lines(y_seq, f_hat, lwd = 2, col = "deepskyblue1")
