@@ -2,9 +2,8 @@
 
 rm(list=ls()); set.seed(123)
 
-# 1. Load necessary libraries
+# 1. Load necessary library
 
-suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 
 # 2. Simulation framework to evaluate hyperparameter elicitation
