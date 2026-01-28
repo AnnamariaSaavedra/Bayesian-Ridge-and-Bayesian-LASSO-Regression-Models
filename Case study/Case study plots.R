@@ -5,7 +5,7 @@
 # 1. Load necessary libraries
 
 suppressMessages(suppressWarnings(library(readxl)))
-suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(dplyr)))
 
 # 2. Import database
 
@@ -14,7 +14,7 @@ Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 # 2.1 Select the response variable
 
 Data <- Data %>%
-  select(CODE, # Country code
+  dplyr::select(CODE, # Country code
          GR6096, # Average growth rate of Gross Domestic Product (GDP) per capita between 1960 and 1996
          GDPCH60L, # GDP per capita in 1960 (logaritmic scale)
          LIFE060, # Life expectancy in 1960
@@ -70,7 +70,7 @@ lines(density(x = y), lwd = 2, col = "darkorange1")
 # 1. Load necessary libraries
 
 suppressMessages(suppressWarnings(library(readr)))
-suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(dplyr)))
 
 # 2. Import database
 
