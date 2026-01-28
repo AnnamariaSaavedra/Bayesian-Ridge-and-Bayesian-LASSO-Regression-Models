@@ -127,9 +127,9 @@ sample_sigma2_lassonp <- function(y, x, xi, beta, e, f)
 sample_tau_lassonp <- function(xi, beta, lambda){
   K <- max(xi) # Number of clusters
   
-  beta_j <- colSums(beta)
+  beta_j <- colSums(beta^2)
   
-  tau <- GIGrvg::rgig(n = p, lambda = (2 - K)/2, chi = (beta_j^2), psi = lambda) # Sample tau
+  tau <- GIGrvg::rgig(n = p, lambda = (2 - K)/2, chi = beta_j, psi = lambda) # Sample tau
   return(tau)
 }
 
@@ -208,7 +208,7 @@ Gibbs_lassonp <- function(y, x, n_burn, n_sams, n_skip, e, f, g, h, l, m, verbos
     ll <- 0
     for (j in 1:n) {
       xi_j <- xi[j]
-      ll_j <- dnorm(y[j], mean = x[j, ]%*%beta[xi_j,], sd = sqrt(sigma[xi_j]), log = TRUE)
+      ll_j <- dnorm(y[j], mean = x[j, ]%*%beta[xi_j,], sd = sqrt(sigma2[xi_j]), log = TRUE)
       ll <- ll + ll_j
     }
     
