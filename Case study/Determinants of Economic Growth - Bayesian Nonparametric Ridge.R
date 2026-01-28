@@ -62,7 +62,7 @@ Data <- Data[complete.cases(Data), ]
 y <- Data$GR6096 # Set the response variable
 
 x <- Data %>%
-  select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
+  dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
   scale(center = TRUE, scale = TRUE) %>% # Standardize the explanatory variables
   as.matrix()
 
