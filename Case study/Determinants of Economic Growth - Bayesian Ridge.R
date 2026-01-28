@@ -5,7 +5,7 @@ rm(list=ls()); set.seed(123)
 # 1. Load necessary libraries
 
 suppressMessages(suppressWarnings(library(readxl)))
-suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
@@ -18,7 +18,7 @@ Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 # 2.1 Select the response variable and explanatory variables
 
 Data <- Data %>%
-  select(CODE, # Country code
+  dplyr::select(CODE, # Country code
          GR6096, # Average growth rate of Gross Domestic Product (GDP) per capita between 1960 and 1996
          GDPCH60L, # GDP per capita in 1960 (logaritmic scale)
          LIFE060, # Life expectancy in 1960
@@ -62,7 +62,7 @@ Data <- Data[complete.cases(Data), ]
 y <- Data$GR6096 # Set the response variable
 
 x <- Data %>%
-  select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
+  dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
   scale(center = TRUE, scale = TRUE) %>% # Standardize the explanatory variables
   as.matrix()
 
@@ -325,7 +325,7 @@ f_sup <- density_estimate$f_sup
 # Plot the histogram
 hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), ylim = c(0, 50),
      ylab = "Densidad", main = "",
-     col = alpha("grey", 0.3), cex.label = 1.5, cex.axis  = 1.5)
+     col = alpha("grey", 0.3), cex.lab = 1.5, cex.axis  = 1.5)
 # Overlay the posterior density estimate as a blue line
 polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("#00CD66", 0.3), border = NA)
 lines(y_seq, f_hat, lwd = 2, col = "#00CD66")
