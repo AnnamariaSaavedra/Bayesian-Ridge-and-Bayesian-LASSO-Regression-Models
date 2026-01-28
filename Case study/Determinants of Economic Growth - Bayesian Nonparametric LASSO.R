@@ -5,7 +5,7 @@ rm(list=ls()); set.seed(123)
 # 1. Load necessary libraries
 
 suppressMessages(suppressWarnings(library(readxl)))
-suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
@@ -20,7 +20,7 @@ Data <- read_xlsx(path = "~/Trabajo de grado/Database.xlsx")
 # 2.1 Select response variable and explanatory variables
 
 Data <- Data %>%
-  select(CODE, # Country code
+  dplyr::select(CODE, # Country code
          GR6096, # Average growth rate of Gross Domestic Product (GDP) per capita between 1960 and 1996
          GDPCH60L, # GDP per capita in 1960 (logaritmic scale)
          LIFE060, # Life expectancy in 1960
@@ -64,7 +64,7 @@ Data <- Data[complete.cases(Data), ]
 y <- Data$GR6096 # Set the response variable
 
 x <- Data %>%
-  select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
+  dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
   scale(center = TRUE, scale = TRUE) %>% # Standardize the explanatory variables
   as.matrix()
 
