@@ -77,7 +77,7 @@ sample_xi_lasso <- function(y, x, xi, beta, sigma2, alpha, e, f, g, h) {
 
 # Full conditional distribution of beta
 
-sample_beta_lassonp <- function(y, x, xi, sigma2, tau) 
+sample_beta_lassonp <- function(y, x, xi, sigma2, tau, p) 
 {
   K <- max(xi) # Number of clusters
   
@@ -135,7 +135,7 @@ sample_tau_lassonp <- function(xi, beta, lambda){
 
 # Full conditional distribution of lambda
 
-sample_lambda_lassonp <- function(tau, g, h) 
+sample_lambda_lassonp <- function(tau, g, h, p) 
 {
   shape <- p + g # Shape parameter
   rate <- (0.5*sum(tau)) + h # Rate parameter
@@ -161,7 +161,7 @@ sample_alpha <- function(alpha, xi, n, l, m)
 
 # Gibbs sampling algorithm
 
-Gibbs_lassonp <- function(y, x, n_burn, n_sams, n_skip, e, f, g, h, l, m, verbose = TRUE) {
+Gibbs_lassonp <- function(y, x, n_burn, n_sams, n_skip, e, f, g, h, l, m, n, p, verbose = TRUE) {
   
   max_K <- floor(n / 2) # Maximum number of clusters
   
