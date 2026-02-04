@@ -103,7 +103,7 @@ LAMBDA_SD <- round(sd(M2$LAMBDA), 3) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M2$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 6 Compute information criterion and cross validation
+# 6. Compute information criterion and cross validation
 
 # Deviance Information Criterion
 
