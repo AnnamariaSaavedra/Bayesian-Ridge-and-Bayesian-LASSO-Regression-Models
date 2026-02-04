@@ -89,7 +89,7 @@ g <- n
 
 # 3.2 Monte Carlo algorithm implementation
 
-M1 <- G_prior(shape, rate, mu, Sigma, 
+M1 <- G_prior(y, x, sigma2_0, nu_0, g, n, p,
               n_sams = 10000, # Set the number of effective samples
               n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
               n_burn = 1000) # Set the number of burn-in samples
@@ -157,22 +157,32 @@ for (i in 1:n) {
 
 WAIC <- -2*LPPD + 2*pWAIC
 
-# 10-fold cross validation
+# 4.4 2-fold cross validation
 
-cross_validation <- function(fold, y, x, p, 
-                             shape, rate, mu, Sigma){
+cross_validation <- function(fold, y, x, p){
   id <- kfold(x = y, k = fold)
   
   # Objects where the mean absolute error, and the mean squared prediction error will be stored
-  mae <- NULL
-  mse <- NULL
+  mape <- NULL
+  mspe <- NULL
   
   for (j in 1:fold) {
     y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
     y_test <- y[id = j]; x_test <- x[id = j] # Test data set
     
+    n <- length(y_train)
+    
+    # Hyperparameter elicitation
+    beta_OLS <- solve(t(x_train)%*%x_train)%*%t(x_train)%*%y_train
+    residuals <- y_train - x_train%*%beta_OLS
+    sigma2_OLS <- sum(residuals^2)/(n - p)
+    
+    nu_0 <- 1
+    sigma2_0 <- sigma2_OLS
+    g <- n
+    
     # Fit G prior regression model
-    M1 <- G_prior(shape, rate, mu, Sigma, 
+    M1 <- G_prior(y_train, x_train, sigma2_0, nu_0, g, n, p, 
                   n_sams = 10000, # Set the number of effective samples
                   n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
                   n_burn = 1000) # Set the number of burn-in samples
@@ -184,20 +194,19 @@ cross_validation <- function(fold, y, x, p,
     # Linear predictor
     y_hat <- x_test%*%beta
 
-    # Compute mean absolute error
-    mae_gprior <- mean(abs(y_test - y_hat))
+    # Compute mean absolute prediction error
+    mape_gprior <- mean(abs(y_test - y_hat))
 
     # Compute mean squared prediction error
-    mse_gprior <- mean((y_test - y_hat)^2)
+    mspe_gprior <- mean((y_test - y_hat)^2)
 
-    mae <- rbind(mae, mae_gprior)
-    mse <- rbind(mse, mse_gprior)
+    mape <- rbind(mape, mape_gprior)
+    mspe <- rbind(mspe, mspe_gprior)
   }
-  return(list(mae = mean(mae), mse = mean(mse)))
+  return(list(mape = mean(mape), mspe = mean(mspe)))
 }
 
-cross_validation_M1 <- cross_validation(fold = 10, y, x, p, 
-                                        shape, rate, mu, Sigma)
+cross_validation_M1 <- cross_validation(fold = 2, y, x, p)
 
 # 4.5 Display log-likelihood chain
 
