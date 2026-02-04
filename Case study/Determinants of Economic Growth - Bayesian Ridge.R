@@ -98,8 +98,6 @@ TEM_beta <- coda::effectiveSize(M2$BETA); summary(TEM_beta) # beta
 
 TEM_sigma2 <- coda::effectiveSize(M2$SIGMA); summary(TEM_sigma2) # sigma2
 
-TEM_tau <- coda::effectiveSize(M2$TAU); summary(TEM_tau) # tau2
-
 TEM_lambda <- coda::effectiveSize(M2$LAMBDA); summary(TEM_lambda) # lambda
 
 # Compute the Monte Carlo standard error for model parameters
@@ -108,13 +106,17 @@ EEMC_beta <- apply(X = M2$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summ
 
 EEMC_sigma2 <- sd(M2$SIGMA)/sqrt(TEM_sigma2); round(summary(EEMC_sigma2), 4) # sigma2
 
-EEMC_tau <- sd(M2$TAU)/sqrt(TEM_tau); round(summary(EEMC_tau), 4) # tau2
-
 EEMC_lambda <- sd(M2$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 4) # lambda
 
-# 4. Bayesian inference
+# 4. Display log-likelihood chain
 
-# 4.1 Bayesian inference for beta
+plot(M2$LL, type = "p", pch = ".", cex = 1.1, col = "#00CD66", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
+     ylim = c(300, 340))
+abline(h = mean(M2$LL), lwd = 3, col = "#00CD66")
+
+# 5. Bayesian inference
+
+# Bayesian inference for beta
 
 BETA_MEAN <- round(apply(M2$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
 
@@ -124,7 +126,7 @@ BETA_SD <- round(apply(M2$BETA, MARGIN = 2, FUN = sd), 4) # Posterior standard d
 
 CI_BETA <- round(apply(M2$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.2 Bayesian inference for sigma2
+# Bayesian inference for sigma2
 
 SIGMA2_MEAN <- round(mean(M2$SIGMA), 5) # Posterior mean
 
@@ -134,7 +136,7 @@ SIGMA2_SD <- round(sd(M2$SIGMA), 5) # Posterior standard deviation
 
 CI_SIGMA <- round(quantile(x = M2$SIGMA, probs = c(0.025, 0.975)), 5) # 95% credible interval
 
-# 4.3 Bayesian inference for lambda
+# Bayesian inference for lambda
 
 LAMBDA_MEAN <- round(mean(M2$LAMBDA), 4) # Posterior mean
 
@@ -144,7 +146,7 @@ LAMBDA_SD <- round(sd(M2$LAMBDA), 4) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M2$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.4 Compute information criterion
+# 6. Compute information criterion and k-fold cross validation
 
 # Deviance Information Criterion
 
@@ -173,9 +175,7 @@ for (i in 1:n) {
 
 WAIC <- -2*LPPD + 2*pWAIC
 
-# 4.5 Cross validation
-
-# 4.4 2-fold cross validation
+# 2-fold cross validation
 
 cross_validation <- function(fold, y, x, p, a, c, d){
   id <- kfold(x = y, k = fold)
@@ -222,7 +222,7 @@ cross_validation <- function(fold, y, x, p, a, c, d){
 
 cross_validation_M2 <- cross_validation(fold = 2, y, x, p, a, c, d)
 
-# 5. Monte Carlo samples from the posterior predictive distribution of test statistics
+# 7. Monte Carlo samples from the posterior predictive distribution of test statistics
 
 # Create test statistics function
 
@@ -243,10 +243,10 @@ ts <- NULL # Object where the test statistics will be stored
 
 # Simulated statistics
 
-for (b in 1:length(M3$SIGMA)) {
+for (b in 1:length(M2$SIGMA)) {
   # Samples from the posterior distribution
-  beta <- M3$BETA[b, ]
-  sigma2 <- M3$SIGMA[b]
+  beta <- M2$BETA[b, ]
+  sigma2 <- M2$SIGMA[b]
   
   # Posterior predictive datasets, each of size n
   y_tilde <- rnorm(n = n, mean = x%*%beta, sd = sqrt(sigma2))
@@ -288,7 +288,7 @@ for (j in 1:length(ts_hat)) {
   ppp[j] <- round(mean(ts[,j] < ts_hat[j]), 3)
 }
 
-# 6. Posterior predictive density estimate
+# 8. Posterior predictive density estimate
 
 posterior_density_estimate <- function(model, 
                                        y_seq, # Define a sequence of y values for density estimation
@@ -323,7 +323,7 @@ y_seq <- seq(min(y), max(y), length.out = 150)
 x_seq <- colMeans(x)
 
 # Compute posterior density estimate and credible intervals
-density_estimate <- posterior_density_estimate(M3, y_seq, x_seq)
+density_estimate <- posterior_density_estimate(M2, y_seq, x_seq)
 
 f_hat <- density_estimate$f_hat
 f_inf <- density_estimate$f_inf
