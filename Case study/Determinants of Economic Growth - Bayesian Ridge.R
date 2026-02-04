@@ -87,66 +87,186 @@ d <- 1 # Rate parameter of gamma distribution
 
 # 3.2 Gibbs sampling algorithm implementation
 
-M2 <- Gibbs_ridge(y, x, a, b, c, d, n, p,
-                  n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling
-                  n_sams = 10000, # Set the number of effective samples
-                  n_burn = 1000) # Set the number of burn-in samples
-
-# Compute the effective sample size for model parameters
-
-TEM_beta <- coda::effectiveSize(M2$BETA); summary(TEM_beta) # beta
-
-TEM_sigma2 <- coda::effectiveSize(M2$SIGMA); summary(TEM_sigma2) # sigma2
-
-TEM_lambda <- coda::effectiveSize(M2$LAMBDA); summary(TEM_lambda) # lambda
-
-# Compute the Monte Carlo standard error for model parameters
-
-EEMC_beta <- apply(X = M2$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summary(EEMC_beta), 4) # beta
-
-EEMC_sigma2 <- sd(M2$SIGMA)/sqrt(TEM_sigma2); round(summary(EEMC_sigma2), 4) # sigma2
-
-EEMC_lambda <- sd(M2$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 4) # lambda
+M4 <- Gibbs_ridgenp(y,
+                    n_burn = 1000, # Set the number of burn-in samples
+                    n_sams = 10000, # Set the number of effective samples
+                    n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling
+                    a, b, c, d, l, m)
 
 # 4. Bayesian inference
 
-# 4.1 Bayesian inference for beta
+# 4.1 Display the log-likelihood chain
 
-BETA_MEAN <- round(apply(M2$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
+plot(M4$LL, type = "p", pch = ".", cex = 1.1, col = "darkorchid3", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
+     ylim = c(300, 340))
+abline(h = mean(M4$LL), lwd = 3, col = "darkorchid3")
 
-BETA_MEDIAN <- round(apply(M2$BETA, MARGIN = 2, FUN = median), 4) # Posterior median
+# 4.2 Inference on the number of clusters
 
-BETA_SD <- round(apply(M2$BETA, MARGIN = 2, FUN = sd), 4) # Posterior standard deviation
+K <- apply(M4$XI, 1, function(x) length(unique(x))) # Compute the number of clusters at each iteration
 
-CI_BETA <- round(apply(M2$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)), 4) # 95% credible interval
+K_table <- as.data.frame(table(K)/length(K))
 
-# 4.2 Bayesian inference for sigma2
+# Plot the posterior distribution of K
 
-SIGMA2_MEAN <- round(mean(M2$SIGMA), 5) # Posterior mean
+ggplot(K_table, aes(x = K, y = Freq)) +
+  geom_segment(aes(x = K, xend = K, y = 0, yend = Freq),
+               color = "cyan2", lwd = 1.5) +
+  ylim(c(0, 1)) +
+  ylab("Densidad") + xlab("Número de clústeres") +
+  theme_bw(base_size = 16) +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
 
-SIGMA2_MEDIAN <- round(median(M2$SIGMA), 5) # Posterior median
+# Compute Incidence Matrix
 
-SIGMA2_SD <- round(sd(M2$SIGMA), 5) # Posterior standard deviation
+matrix_A <- function(model, K, n){
+  ite <- nrow(model$XI)
+  A <- matrix(data = 0, nrow = n, ncol = n)
+  
+  for (b in 1:ite) {
+    xi_b <- model$XI[b,]
+    for (k in unique(xi_b)) {
+      cluster_i <- which(xi_b == k)
+      A[cluster_i, cluster_i] <- A[cluster_i, cluster_i] + 1
+    }
+  }
+  A <- A / ite
+  diag(A) <- 1
+  
+  # Convert A to the incidence matrix
+  A <- 1 - A
+  
+  # Apply multidimensional scaling
+  coord <- cmdscale(as.dist(A), k = 4)
+  
+  # Clustering based on co-clustering probabilities
+  xi_hat <- Mclust(data = coord, G = 1:K)$classification
+  
+  return(xi_hat = xi_hat)
+}
 
-CI_SIGMA <- round(quantile(x = M2$SIGMA, probs = c(0.025, 0.975)), 5) # 95% credible interval
+# 4.3 Inference for Bayesian Nonparametric Ridge
 
-# 4.3 Bayesian inference for lambda
+hat_np <- function(model, K, p){
+  ite <- nrow(model$XI)
+  permu <- gtools::permutations(n = K, r = K) # Permutations
+  
+  # Objects where the samples of beta, and sigma2 will be stored
+  BETA_corrected <- vector("list", p)
+  SIGMA2_corrected <- NULL
+  
+  # Posterior distribution of K
+  k <- apply(X = model$XI, MARGIN = 1, function(x) length(unique(x)))
+  k_tab <- table(factor(x = k, levels = k, labels = k))
+  
+  # Objects where the posterior mean of beta, and sigma2 will be stored
+  beta_pos <- matrix(0, nrow = K, ncol = p)
+  sigma2_pos <- 0
+  
+  for (b in 1:ite) {
+    if (length(unique(model$XI[b,])) == K) {
+      beta_pos <- beta_pos +
+        model$BETA[[b]][sort(unique(model$XI[b,])), , drop = FALSE] / max(k_tab)
+      
+      sigma2_pos <- sigma2_pos + model$SIGMA[[b]] / max(k_tab)
+    }
+  }
+  
+  # Average over the permuted spaces
+  for (b in 1:ite) {
+    if (length(table(model$XI[b,])) == K) {
+      beta_current <- model$BETA[[b]][sort(unique(model$XI[b,])), , drop = FALSE]
+      # Reorder according to the permutations, and compute the distance of each sample to its posterior mean
+      dist <- apply(X = permu, MARGIN = 1, 
+                    FUN = function(perm) {
+                      permuted_beta <- sum((beta_current[perm,, drop = FALSE] - beta_pos)^2)
+                    }
+      )
+      # Select the optimum permutation
+      best_permu <- permu[which.min(dist),]
+      for (j in 1:p) {
+        BETA_corrected[[j]] <- rbind(BETA_corrected[[j]], beta_current[best_permu, j]) 
+      }
+      
+      sigma2_current <- model$SIGMA[[b]]
+      # Reorder according to the permutations, and compute the distance of each sample to its posterior mean
+      dist2 <- apply(X = permu, MARGIN = 1, 
+                    FUN = function(perm) {
+                      permuted_sigma2 <- sigma2_current[perm]
+                      sum((permuted_sigma2 - sigma2_pos)^2)
+                    }
+      )
+      # Select the optimum permutation
+      best_permu <- permu[which.min(dist2),]
+      SIGMA2_corrected <- rbind(SIGMA2_corrected, sigma2_current[best_permu])
+    }
+  }
+  
+  # Posterior mean, and 95% credible interval
+  inf <- matrix(data = NA, nrow = p + 1, ncol = 5*K)
+  id <- function(k)(5*(k - 1) + 1):(5*k)
+  
+  for (j in 1:p) {
+    beta_mean <- colMeans(BETA_corrected[[j]])
+    beta_median <- apply(BETA_corrected[[j]], MARGIN = 2, FUN = median)
+    beta_sd <- apply(BETA_corrected[[j]], MARGIN = 2, FUN = sd)
+    beta_ic <- apply(X = BETA_corrected[[j]], MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975))
+    
+    for (k in 1:K) {
+      inf[j, id(k)] <- c(beta_mean[k], beta_median[k], beta_sd[k], beta_ic[1, k], beta_ic[2, k])
+    }
+  }
+  sigma2_mean <- colMeans(SIGMA2_corrected)
+  sigma2_median <- apply(SIGMA2_corrected, MARGIN = 2, FUN = median)
+  sigma2_sd <- apply(SIGMA2_corrected, MARGIN = 2, FUN = sd)
+  sigma2_ic <- apply(SIGMA2_corrected, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975))
+  
+  for (k in 1:K) {
+    inf[p + 1, id(k)] <- c(sigma2_mean[k], sigma2_median[k], sigma2_sd, sigma2_ic[1, k], sigma2_ic[2, k])
+  }
+  
+  col <- seq(from = 1, to = ncol(inf), by = 5) # Position of the posterior mean
+  beta <- inf[c(1:p), col]
+  sigma2 <- inf[(p + 1), col]
+  
+  return(list(inference = inf, beta = as.matrix(beta), sigma2 = sigma2))
+}
 
-LAMBDA_MEAN <- round(mean(M2$LAMBDA), 4) # Posterior mean
+inference <- hat_np(M4, K = 1, p)
 
-LAMBDA_MEDIAN <- round(median(M2$LAMBDA), 4) # Posterior median
+# Bayesian inference for lambda
 
-LAMBDA_SD <- round(sd(M2$LAMBDA), 4) # Posterior standard deviation
+LAMBDA_MEAN <- round(mean(M4$LAMBDA), 4) # Posterior mean
 
-CI_LAMBDA <- round(quantile(x = M2$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
+LAMBDA_MEDIAN <- round(median(M4$LAMBDA), 4) # Posterior median
 
-# 4.4 Compute information criterion and k-fold cross validation
+LAMBDA_SD <- round(sd(M4$LAMBDA), 4) # Posterior standard deviation
+
+CI_LAMBDA <- round(quantile(x = M4$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
+
+# Bayesian inference for alpha
+
+ALPHA_MEAN <- round(mean(M4$ALPHA), 4) # Posterior mean
+
+ALPHA_MEDIAN <- round(median(M4$ALPHA), 4) # Posterior median
+
+ALPHA_SD <- round(sd(M4$ALPHA), 4) # Posterior standard deviation
+
+CI_ALPHA <- round(quantile(x = M4$ALPHA, probs = c(0.025, 0.975)), 4) # 95% credible interval
+
+# 4.4 Compute information criterion
 
 # Deviance Information Criterion
 
-LL_HAT <- sum(dnorm(x = y, mean = x%*%BETA_MEAN, sd = sqrt(SIGMA2_MEAN), log = TRUE))
+# Posterior mean of beta, and sigma 2 corrected
 
-LL_B <- M2$LL
+beta_mean <- round(inference$beta, 4)
+sigma2_mean <- round(inference$sigma2, 4)
+
+LL_HAT <- sum(dnorm(x = y, mean = x%*%beta_mean, sd = sqrt(sigma2_mean), log = TRUE))
+
+LL_B <- M4$LL
 
 pDIC <- 2*(LL_HAT - mean(LL_B))
 
@@ -154,156 +274,158 @@ DIC <- -2*LL_HAT + 2*pDIC
 
 # Watanabe-Akaike Information Criterion
 
-LPPD <- 0
-
-pWAIC <- 0
-
+TMP <- matrix(data = NA, nrow = ite, ncol = n)
+TMP_2 <- matrix(data = NA, nrow = ite, ncol = n)
+  
 for (i in 1:n) {
-  # LPPD
-  TMP <- dnorm(x = y[i], mean = x[i,]%*%t(M2$BETA), sd = sqrt(M2$SIGMA))
-  LPPD <- LPPD + log(mean(TMP))
-  # pWAIC
-  TMP_2 <- dnorm(x = y[i], mean = x[i,]%*%t(M2$BETA), sd = sqrt(M2$SIGMA), log = TRUE)
-  pWAIC <- pWAIC + 2*(log(mean(TMP)) - mean(TMP_2))
+  for (b in 1:ite) {
+    xi <- model$XI
+    beta <- model$BETA[[b]][xi[b,i], , drop = FALSE]
+    sigma2 <- model$SIGMA[[b]][xi[b,i]]
+      
+    # LPPD
+    TMP[b,i] <- dnorm(x = y[i], mean = x[i,]%*%t(beta), sd = sqrt(sigma2))
+      
+    #pWAIC
+    TMP_2[b,i] <- dnorm(x = y[i], mean = x[i,]%*%t(beta), sd = sqrt(sigma2), log = TRUE) 
+  }
+}
+  
+LPPD <- sum(log(colMeans(TMP)))
+pWAIC <- 2*sum((log(colMeans(TMP)) - colMeans(TMP_2)))
+  
+WAIC <- -2*LPPD + 2*pWAIC
+  
+# 4.5 Cross validation
+
+# Out of sample prediction
+
+out_sample <- function(y_test, x_test, K, xi_hat, beta, sigma2, alpha, 
+                       a, b, c, d){
+  # Object where the cluster assignment will be stored
+  xi_test <- numeric(length(y_test))
+  
+  for (i in 1:length(y_test)) {
+    # Object where the probability for the i-th observation of the test data set
+    # to be assigned to a cluster will be stored
+    log_probs <- numeric(xi_max + 1)
+    
+    # Vector of explanatory variables, and response variable of the i-th observation
+    # of the test data
+    x_i <- matrix(data = x_test[i,], nrow = 1, ncol = p, byrow = FALSE)
+    y_i <- y_test[i]
+    
+    for (k in 1:xi_max) {
+      n_k <- sum(xi_hat == k) # Number of observations in the k-th cluster
+      log_probs[k] <- log(n_k) + dnorm(y_i, mean = x_i%*%beta[,k], sd = sqrt(sigma2[k]), log = TRUE)
+    }
+    
+    # Sample beta from its prior distribution
+    lambda_prior <- rgamma(n = 1, shape = c, rate = d)
+    beta_prior <- c(mvtnorm::rmvnorm(n = 1, mean = rep(0, p), sigma = (1/lambda_prior)*(diag(x = 1, p))))
+    
+    # Sample sigma2 from its prior distribution
+    sigma2_prior <- 1/rgamma(n = 1, shape = a, rate = b)
+    
+    # Probability for the i-th observation to be assigned to a new cluster K + 1
+    log_probs[xi_max + 1] <- log(alpha) + dnorm(y_i, mean = x_i%*%beta_prior, sd = sqrt(sigma2_prior), log = TRUE)
+    
+    # Sample the cluster assignment for the i-th observation of the test set
+    cluster <- sample(1:(xi_max + 1), size = 1, prob = exp(log_probs - max(log_probs)))
+    xi_test[i] <- cluster
+  }
+  return(xi_test = xi_test)
 }
 
-WAIC <- -2*LPPD + 2*pWAIC
+# Cross validation
 
-# 10-fold cross validation
-
-cross_validation <- function(fold, y, x, p, 
-                             a, b, c, d){
-  id <- kfold(x = y, k = fold)
+cross_validation <- cross_validation <- function(fold, y, x, p, 
+                                                 a, b, c, d, l, m){
+  id <- kfold(x = y, k = 2)
   
-  # Objects where the mean absolute error, and the mean squared prediction error will be stored
+  # Objects where the mean absolute prediction error, and the mean squared 
+  # prediction error will be stored
   mae <- NULL
   mse <- NULL
   
   for (j in 1:fold) {
     y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
-    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
+    y_test <- y[id == j]; x_test <- x[id == j,] # Test data set
     
-    # Fit Bayesian Ridge regression model
-    M2 <- Gibbs_ridge(y_train, x_train, a, b, c, d, n = length(y_train), p,
-                      n_burn = 1000,
-                      n_sams = 10000,
-                      n_skip = 10)
+    n <- length(y_train)
     
-    # Posterior mean for beta
-    beta_ridge <- colMeans(M2$BETA)
+    # Fit Bayesian Nonparametric Ridge regression model
+    M4 <- Gibbs_ridgenp(y_train, x_train, 
+                        n_burn = 1000, 
+                        n_sams = 10000, 
+                        n_skip = 10, 
+                        a, b, c, d, l, m, n, p, verbose = TRUE)
+    
+    # Inference on the number of clusters
+    K <- apply(M4$XI, 1, function(x) length(unique(x)))
+    K_table <- as.data.frame(table(K)/length(K))
+    
+    # Posterior number of clusters
+    k_pos <- as.numeric(K_table$K[which.max(K_table$Freq)])
+    
+    # Posterior mean for beta and sigma2
+    beta <- hat_np(M4, k_pos, p)$beta
+    sigma2 <- hat_np(M4, k_pos, p)$sigma2
+    
+    # Posterior mean for alpha
+    alpha <- mean(M4$ALPHA)
+    
+    # Cluster assignment
+    xi_hat <- matrix_A(M4, k_pos, n)
+    
+    # Cross validation
+    xi <- out_sample(y_test, x_test, k_pos, xi_hat, beta, sigma2, alpha,
+                     a, b, c, d)
     
     # Linear predictor
-    y_hat_ridge <- x_test%*%beta_ridge
+    y_hat_ridge <- numeric(n)
+    for (i in 1:n) {
+      y_hat_ridge[i] <- x_test[i,]%*%beta[,xi[i]]
+    }
     
-    # Compute mean absolute error
-    mae_ridge <- mean(abs(y_test - y_hat_ridge))
-    
-    # Compute mean squared prediction error
-    mse_ridge <- mean((y_test - y_hat_ridge)^2)
-    
-    mae <- rbind(mae, mae_ridge)
-    mse <- rbind(mse, mse_ridge)
+    # Compute mean absolute prediction error and mean squared prediction error
+    mape <- mean(abs(y_test - y_hat_ridge))
+    mspe <- mean((y_test - y_hat_ridge)^2)
   }
-  return(list(mae = mean(mae), mse = mean(mse)))
+  return(list(mape = mape, mspe = mspe))
 }
 
-cross_validation_M2 <- cross_validation(fold = 10, y, x, p, a, b, c, d)
+CV <- cross_validation(fold = 1, y, x, p, a, b, c, d, l, m)
 
-# 4.5 Display log-likelihood chain
+# 4.6 Bayesian inference for density function
 
-plot(M2$LL, type = "p", pch = ".", cex = 1.1, col = "#00CD66", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
-     ylim = c(300, 340))
-abline(h = mean(M2$LL), lwd = 3, col = "#00CD66")
-
-# 5. Monte Carlo samples from the posterior predictive distribution of test statistics
-
-# Create test statistics function
-
-test_stats <- function(x) {
-  c(mean = mean(x),
-    median = median(x),
-    sd = sd(x),
-    iqr = diff(quantile(x, c(0.25, 0.75))),
-    min = min(x),
-    max = max(x)
-  )
-}
-
-ts_display <- c("Media", "Mediana", "Desviación estándar", "Rango intercuartílico",
-                "Mínimo", "Máximo")
-
-ts <- NULL # Object where the test statistics will be stored
-
-# Simulated statistics
-
-for (b in 1:length(M2$SIGMA)) {
-  # Samples from the posterior distribution
-  beta <- M2$BETA[b, ]
-  sigma2 <- M2$SIGMA[b]
-  
-  # Posterior predictive datasets, each of size n
-  y_tilde <- rnorm(n = n, mean = x%*%beta, sd = sqrt(sigma2))
-  
-  # Samples from the posterior predictive distribution of test statistics
-  ts <- rbind(ts, test_stats(y_tilde)) # Compute test statistics
-}
-
-ts_hat <- test_stats(y) # Observed test statistics
-
-# Comparison plots between simulated and observed test statistics
-
-par(mfrow = c(3, 2), mar = c(3, 3, 2, 1), mgp = c(1.75, 0.75, 0))
-for (j in 1:length(ts_hat)) {
-  test_statistics  <- ts[, j]
-  test_statistics_hat <- ts_hat[j]
-  
-  # Plot histogram
-  hist(
-    x = test_statistics, freq = FALSE, nclass = 30,
-    col = "gray90", border = "gray90",
-    xlab = ts_display[j], ylab = "Densidad",
-    main = ts_display[j]
-  )
-  
-  abline(
-    v = quantile(test_statistics, c(0.025, 0.5, 0.975)),
-    col = c(4, 2, 4), lty = c(4, 2, 4), lwd = c(2, 1, 2)
-  )
-  
-  abline(v = test_statistics_hat, lwd = 2)
-}
-
-# Compute posterior predictive p-value
-
-ppp <- NULL
-
-for (j in 1:length(ts_hat)) {
-  ppp[j] <- round(mean(ts[,j] < ts_hat[j]), 3)
-}
-
-# 6. Posterior predictive density estimate
-
-posterior_density_estimate <- function(model, 
-                                       y_seq, # Define a sequence of y values for density estimation
-                                       x # Define a grid of x values
-                                       ) {
-  B <- length(model$SIGMA)
+posterior_density_estimate <- function(model, y_seq, x) {
+  B <- length(model$BETA)
+  n <- ncol(model$XI)
   M <- length(y_seq)
   
-  # Object where density estimates will be stored
+  # Store density estimates
   FE <- matrix(NA, nrow = B, ncol = M)
   
   for (b in 1:B) {
-    beta_b <- model$BETA[b,]
-    sigma2_b <- model$SIGMA[b]
+    xi <- model$XI[b, ]
+    beta <- model$BETA[[b]]
+    sigma2 <- model$SIGMA[[b]]
+    
+    # Unique cluster labels
+    cluster_labels <- sort(unique(xi))
+    cluster_counts <- as.numeric(table(xi)[as.character(cluster_labels)])
+    
+    # Cluster probabilities
+    weight_b <- cluster_counts / sum(cluster_counts)
     
     for (i in 1:M) {
-      FE[b, i] <- dnorm(y_seq[i], mean = x%*%beta_b, sd = sqrt(sigma2_b))
+      FE[b, i] <- sum(weight_b * dnorm(y_seq[i], mean = x%*%t(beta), sd = sqrt(sigma2)))
     }
   }
   
   f_hat <- colMeans(FE)  # Posterior mean density
-  f_inf <- apply(FE, 2, quantile, probs = 0.025)  # 2.5% credible interval
+  f_inf <- apply(FE, 2, quantile, probs = 0.025)  # 2.5%  credible interval
   f_sup <- apply(FE, 2, quantile, probs = 0.975)  # 97.5% credible interval
   
   return(list(f_hat = f_hat, f_inf = f_inf, f_sup = f_sup))
@@ -316,7 +438,7 @@ y_seq <- seq(min(y), max(y), length.out = 150)
 x_seq <- colMeans(x)
 
 # Compute posterior density estimate and credible intervals
-density_estimate <- posterior_density_estimate(M2, y_seq, x_seq)
+density_estimate <- posterior_density_estimate(M4, y_seq, x_seq)
 
 f_hat <- density_estimate$f_hat
 f_inf <- density_estimate$f_inf
@@ -327,5 +449,5 @@ hist(x = y, freq = FALSE, xlim = c(-0.06, 0.08), ylim = c(0, 50),
      ylab = "Densidad", main = "",
      col = alpha("grey", 0.3), cex.lab = 1.5, cex.axis  = 1.5)
 # Overlay the posterior density estimate as a blue line
-polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("#00CD66", 0.3), border = NA)
-lines(y_seq, f_hat, lwd = 2, col = "#00CD66")
+polygon(c(y_seq, rev(y_seq)), c(f_inf, rev(f_sup)), col = alpha("darkorchid3", 0.3), border = NA)
+lines(y_seq, f_hat, lwd = 2, col = "darkorchid3")
