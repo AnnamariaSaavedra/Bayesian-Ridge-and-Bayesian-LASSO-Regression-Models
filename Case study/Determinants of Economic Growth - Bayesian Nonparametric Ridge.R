@@ -223,7 +223,7 @@ hat_np <- function(model, K, p, ite){
   sigma2_ic <- apply(SIGMA2_corrected, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975))
   
   for (k in 1:K) {
-    inf[p + 1, id(k)] <- c(sigma2_mean[k], sigma2_median[k], sigma2_sd, sigma2_ic[1, k], sigma2_ic[2, k])
+    inf[p + 1, id(k)] <- c(sigma2_mean[k], sigma2_median[k], sigma2_sd[k], sigma2_ic[1, k], sigma2_ic[2, k])
   }
   return(list(inference = inf))
 }
