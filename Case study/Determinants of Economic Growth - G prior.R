@@ -162,56 +162,51 @@ for (i in 1:n) {
 
 WAIC <- -2*LPPD + 2*pWAIC
 
-# 2-fold cross validation
+# Cross validation
 
-cross_validation <- function(fold, y, x, p){
-  id <- kfold(x = y, k = fold)
+cross_validation <- function(y, x, n, p){
+  index <- sample(1:n, size = 0.7*n)
+  
+  y_train <- y[index]; x_train <- x[index,] # Train data set
+  y_test <- y[-index]; x_test <- x[-index,] # Test data set
   
   # Objects where the mean absolute error, and the mean squared prediction error will be stored
   mape <- NULL
   mspe <- NULL
   
-  for (j in 1:fold) {
-    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
-    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
-    
-    n <- length(y_train)
-    
-    # Hyperparameter elicitation
-    beta_OLS <- solve(t(x_train)%*%x_train)%*%t(x_train)%*%y_train
-    residuals <- y_train - x_train%*%beta_OLS
-    sigma2_OLS <- sum(residuals^2)/(n - p)
-    
-    nu_0 <- 1
-    sigma2_0 <- sigma2_OLS
-    g <- n
-    
-    # Fit G prior regression model
-    M1 <- G_prior(y_train, x_train, sigma2_0, nu_0, g, n, p, 
-                  n_sams = 10000, # Set the number of effective samples
-                  n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
-                  n_burn = 1000) # Set the number of burn-in samples
-    
-    
-    # Posterior mean for beta
-    beta <- colMeans(M1$BETA)
-    
-    # Linear predictor
-    y_hat <- x_test%*%beta
-
-    # Compute mean absolute prediction error
-    mape_gprior <- mean(abs(y_test - y_hat))
-
-    # Compute mean squared prediction error
-    mspe_gprior <- mean((y_test - y_hat)^2)
-
-    mape <- rbind(mape, mape_gprior)
-    mspe <- rbind(mspe, mspe_gprior)
-  }
-  return(list(mape = mean(mape), mspe = mean(mspe)))
+  n <- length(y_train)
+  
+  # Hyperparameter elicitation
+  beta_OLS <- solve(t(x_train)%*%x_train)%*%t(x_train)%*%y_train
+  residuals <- y_train - x_train%*%beta_OLS
+  sigma2_OLS <- sum(residuals^2)/(n - p)
+  
+  nu_0 <- 1
+  sigma2_0 <- sigma2_OLS
+  g <- n
+  
+  # Fit G prior regression model
+  M1 <- G_prior(y_train, x_train, sigma2_0, nu_0, g, n, p, 
+                n_sams = 10000, # Set the number of effective samples
+                n_skip = 1, # Accounting for Markov chain autocorrelation will require systematic sampling
+                n_burn = 1000) # Set the number of burn-in samples
+  
+  # Posterior mean for beta
+  beta <- colMeans(M1$BETA)
+  
+  # Linear predictor
+  y_hat <- x_test%*%beta
+  
+  # Compute mean absolute prediction error
+  mape <- mean(abs(y_test - y_hat))
+  
+  # Compute mean squared prediction error
+  mspe <- mean((y_test - y_hat)^2)
+  
+  return(list(mape = mape, mspe = mspe))
 }
 
-cross_validation_M1 <- cross_validation(fold = 2, y, x, p)
+cross_validation_M1 <- cross_validation(y, x, n, p)
 
 # 7. Monte Carlo samples from the posterior predictive distribution of test statistics
 
