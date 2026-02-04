@@ -2,28 +2,22 @@
 
 set.seed(123)
 
-# Marginal posterior distribution of sigma2
-
-shape <- 0.5*(nu_0 + n) # Shape parameter
-
-# Rate parameter
-
-Matrix <- x%*%solve(t(x)%*%x)%*%t(x)
-
-RSS <- t(y)%*%(diag(x = 1, n) - (g / (g + 1))*Matrix)%*%y # Residual sum of squares
-
-rate <- 0.5*((nu_0*sigma2_0) + RSS)
-
-# Full conditional distribution of beta
-
-Sigma <- (g / (g + 1))*(solve(t(x)%*%x)) # Compute covariance matrix
-  
-mu <- Sigma%*%t(x)%*%y # Compute mean vector
-
 # Monte Carlo algorithm
 
-G_prior <- function(shape, rate, mu, Sigma, n_sams, n_skip, n_burn, verbose = TRUE)
+G_prior <- function(y, x, sigma2_0, nu_0, g, n, p, n_sams, n_skip, n_burn, verbose = TRUE)
 {
+  # Marginal posterior distribution of sigma2
+  shape <- 0.5*(nu_0 + n) # Shape parameter
+  
+  # Rate parameter
+  Matrix <- x%*%solve(t(x)%*%x)%*%t(x)
+  RSS <- t(y)%*%(diag(x = 1, n) - (g / (g + 1))*Matrix)%*%y # Residual sum of squares
+  rate <- 0.5*((nu_0*sigma2_0) + RSS)
+  
+  # Full conditional distribution of beta
+  Sigma <- (g / (g + 1))*(solve(t(x)%*%x)) # Compute covariance matrix
+  mu <- Sigma%*%t(x)%*%y # Compute mean vector
+  
   # Number of iterations of the Monte Carlo algorithm
   B <- n_burn + n_sams*n_skip
   ncat <- floor(0.01*B)
