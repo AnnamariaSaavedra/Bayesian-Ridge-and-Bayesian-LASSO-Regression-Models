@@ -106,9 +106,14 @@ EEMC_beta <- apply(X = M1$BETA, MARGIN = 2, FUN = sd)/sqrt(TEM_beta); round(summ
 
 EEMC_sigma <- sd(M1$SIGMA)/sqrt(TEM_sigma); round(summary(EEMC_sigma), 4) # sigma2
 
-# 4. Bayesian inference
+# 4. Display log-likelihood chain
 
-# 4.1 Bayesian inference for beta
+plot(M1$LL, type = "p", pch = ".", cex = 1.1, col = "deepskyblue1", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",)
+abline(h = mean(M1$LL), lwd = 3, col = "deepskyblue1")
+
+# 5. Bayesian inference
+
+# Bayesian inference for beta
 
 BETA_MEAN <- round(apply(M1$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
 
@@ -118,7 +123,7 @@ BETA_SD <- round(apply(M1$BETA, MARGIN = 2, FUN = sd), 4) # Posterior standard d
 
 CI_BETA <- round(apply(M1$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.2 Bayesian inference for sigma2
+# Bayesian inference for sigma2
 
 SIGMA2_MEAN <- round(mean(M1$SIGMA), 4) # Posterior mean
 
@@ -128,7 +133,7 @@ SIGMA2_SD <- round(sd(M1$SIGMA), 5) # Posterior standard deviation
 
 CI_SIGMA <- round(quantile(x = M1$SIGMA, probs = c(0.025, 0.975)), 5) # 95% credible interval
 
-# 4.3 Compute information criterion and k-fold cross validation
+# 6. Compute information criterion and k-fold cross validation
 
 # Deviance Information Criterion
 
@@ -157,7 +162,7 @@ for (i in 1:n) {
 
 WAIC <- -2*LPPD + 2*pWAIC
 
-# 4.4 2-fold cross validation
+# 2-fold cross validation
 
 cross_validation <- function(fold, y, x, p){
   id <- kfold(x = y, k = fold)
@@ -208,12 +213,7 @@ cross_validation <- function(fold, y, x, p){
 
 cross_validation_M1 <- cross_validation(fold = 2, y, x, p)
 
-# 4.5 Display log-likelihood chain
-
-plot(M1$LL, type = "p", pch = ".", cex = 1.1, col = "deepskyblue2", xlab = "Iteración", ylab = "Log-verosimilitud", main = "")
-abline(h = mean(M1$LL), lwd = 3, col = "deepskyblue3")
-
-# 5. Monte Carlo samples from the posterior predictive distribution of test statistics
+# 7. Monte Carlo samples from the posterior predictive distribution of test statistics
 
 # Create test statistics function
 
@@ -279,7 +279,7 @@ for (j in 1:length(ts_hat)) {
   ppp[j] <- round(mean(ts[,j] < ts_hat[j]), 3)
 }
 
-# 6. Posterior predictive density estimate
+# 8. Posterior predictive density estimate
 
 posterior_density_estimate <- function(model, 
                                        y_seq, # Define a sequence of y values for density estimation
