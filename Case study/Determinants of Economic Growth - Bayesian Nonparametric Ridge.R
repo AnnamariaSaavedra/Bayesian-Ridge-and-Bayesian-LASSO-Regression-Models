@@ -256,8 +256,8 @@ CI_ALPHA <- round(quantile(x = M4$ALPHA, probs = c(0.025, 0.975)), 4) # 95% cred
 
 # Posterior mean of beta, and sigma 2 corrected
 
-beta_mean <- round(inference[-nrow(inference),1], 4)
-sigma2_mean <- round(inference[nrow(inference),1], 5)
+beta_mean <- round(inference$beta, 4)
+sigma2_mean <- round(inference$sigma2, 4)
 
 LL_HAT <- sum(dnorm(x = y, mean = x%*%beta_mean, sd = sqrt(sigma2_mean), log = TRUE))
 
@@ -269,35 +269,130 @@ DIC <- -2*LL_HAT + 2*pDIC
 
 # Watanabe-Akaike Information Criterion
 
-compute_WAIC_np <- function(model, y, x, n, ite){
-  TMP <- matrix(data = NA, nrow = ite, ncol = n)
-  TMP_2 <- matrix(data = NA, nrow = ite, ncol = n)
+TMP <- matrix(data = NA, nrow = ite, ncol = n)
+TMP_2 <- matrix(data = NA, nrow = ite, ncol = n)
   
-  for (i in 1:n) {
-    for (b in 1:ite) {
-      xi <- model$XI
-      beta <- model$BETA[[b]][xi[b,i], , drop = FALSE]
-      sigma2 <- model$SIGMA[[b]][xi[b,i]]
+for (i in 1:n) {
+  for (b in 1:ite) {
+    xi <- model$XI
+    beta <- model$BETA[[b]][xi[b,i], , drop = FALSE]
+    sigma2 <- model$SIGMA[[b]][xi[b,i]]
       
-      # LPPD
-      TMP[b,i] <- dnorm(x = y[i], mean = x[i,]%*%t(beta), sd = sqrt(sigma2))
+    # LPPD
+    TMP[b,i] <- dnorm(x = y[i], mean = x[i,]%*%t(beta), sd = sqrt(sigma2))
       
-      #pWAIC
-      TMP_2[b,i] <- dnorm(x = y[i], mean = x[i,]%*%t(beta), sd = sqrt(sigma2), log = TRUE) 
-    }
+    #pWAIC
+    TMP_2[b,i] <- dnorm(x = y[i], mean = x[i,]%*%t(beta), sd = sqrt(sigma2), log = TRUE) 
   }
+}
   
-  LPPD <- sum(log(colMeans(TMP)))
-  pWAIC <- 2*sum((log(colMeans(TMP)) - colMeans(TMP_2)))
+LPPD <- sum(log(colMeans(TMP)))
+pWAIC <- 2*sum((log(colMeans(TMP)) - colMeans(TMP_2)))
   
-  WAIC <- -2*LPPD + 2*pWAIC
+WAIC <- -2*LPPD + 2*pWAIC
   
-  return(WAIC)
+# 4.5 Cross validation
+
+# Out of sample prediction
+
+out_sample <- function(y_test, x_test, K, xi_hat, beta, sigma2, alpha, 
+                       a, b, c, d){
+  # Object where the cluster assignment will be stored
+  xi_test <- numeric(length(y_test))
+  
+  for (i in 1:length(y_test)) {
+    # Object where the probability for the i-th observation of the test data set
+    # to be assigned to a cluster will be stored
+    log_probs <- numeric(K + 1)
+    
+    # Vector of explanatory variables, and response variable of the i-th observation
+    # of the test data
+    x_i <- matrix(data = x_test[i,], nrow = 1, ncol = p, byrow = FALSE)
+    y_i <- y_test[i]
+    
+    for (k in 1:K) {
+      n_k <- sum(xi_hat == k) # Number of observations in the k-th cluster
+      log_probs[k] <- log(n_k) + dnorm(y_i, mean = x_i%*%beta[,k], sd = sqrt(sigma2[k]), log = TRUE)
+    }
+    
+    # Sample beta from its prior distribution
+    lambda_prior <- rgamma(n = 1, shape = c, rate = d)
+    beta_prior <- c(mvtnorm::rmvnorm(n = 1, mean = rep(0, p), sigma = (1/lambda_prior)*(diag(x = 1, p))))
+    
+    # Sample sigma2 from its prior distribution
+    sigma2_prior <- 1/rgamma(n = 1, shape = a, rate = b)
+    
+    # Probability for the i-th observation to be assigned to a new cluster K + 1
+    log_probs[K + 1] <- log(alpha) + dnorm(y_i, mean = x_i%*%beta_prior, sd = sqrt(sigma2_prior), log = TRUE)
+    
+    # Sample the cluster assignment for the i-th observation of the test set
+    cluster <- sample(1:(K + 1), size = 1, prob = exp(log_probs - max(log_probs)))
+    xi_test[i] <- cluster
+  }
+  return(xi_test = xi_test)
 }
 
-WAIC <- compute_WAIC_np(M4, y, x, n, ite = 10000)
+# Cross validation
 
-# 4.5 Bayesian inference for density function
+cross_validation <- cross_validation <- function(fold, y, x, p, 
+                                                 a, b, c, d, l, m){
+  id <- kfold(x = y, k = 2)
+  
+  # Objects where the mean absolute prediction error, and the mean squared 
+  # prediction error will be stored
+  mae <- NULL
+  mse <- NULL
+  
+  for (j in 1:fold) {
+    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
+    y_test <- y[id == j]; x_test <- x[id == j,] # Test data set
+    
+    n <- length(y_train)
+    
+    # Fit Bayesian Nonparametric Ridge regression model
+    M4 <- Gibbs_ridgenp(y_train, x_train, 
+                        n_burn = 1000, 
+                        n_sams = 10000, 
+                        n_skip = 10, 
+                        a, b, c, d, l, m, n, p, verbose = TRUE)
+    
+    # Inference on the number of clusters
+    K <- apply(M4$XI, 1, function(x) length(unique(x)))
+    K_table <- as.data.frame(table(K)/length(K))
+    
+    # Posterior number of clusters
+    k_pos <- as.numeric(K_table$K[which.max(K_table$Freq)])
+    
+    # Posterior mean for beta and sigma2
+    beta <- hat_np(M4, k_pos, p)$beta
+    sigma2 <- hat_np(M4, k_pos, p)$sigma2
+    
+    # Posterior mean for alpha
+    alpha <- mean(M4$ALPHA)
+    
+    # Cluster assignment
+    xi_hat <- matrix_A(M4, k_pos, n)
+    
+    # Cross validation
+    xi <- out_sample(y_test, x_test, k_pos, xi_hat, beta, sigma2, alpha,
+                     a, b, c, d)
+    
+    # Linear predictor
+    y_hat_ridge <- numeric(n)
+    for (i in 1:n) {
+      y_hat_ridge[i] <- x_test[i,]%*%beta[,xi[i]]
+    }
+    
+    # Compute mean absolute prediction error and mean squared prediction error
+    mape <- mean(abs(y_test - y_hat_ridge))
+    mspe <- mean((y_test - y_hat_ridge)^2)
+  }
+  return(list(mape = mape, mspe = mspe))
+}
+
+CV <- cross_validation(fold = 1, y, x, p, a, b, c, d, l, m)
+
+# 4.6 Bayesian inference for density function
 
 posterior_density_estimate <- function(model, y_seq, x) {
   B <- length(model$BETA)
