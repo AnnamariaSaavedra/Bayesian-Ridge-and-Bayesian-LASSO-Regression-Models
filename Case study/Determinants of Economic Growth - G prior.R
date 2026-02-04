@@ -133,7 +133,7 @@ SIGMA2_SD <- round(sd(M1$SIGMA), 5) # Posterior standard deviation
 
 CI_SIGMA <- round(quantile(x = M1$SIGMA, probs = c(0.025, 0.975)), 5) # 95% credible interval
 
-# 6. Compute information criterion and k-fold cross validation
+# 6. Compute information criterion and cross validation
 
 # Deviance Information Criterion
 
