@@ -13,7 +13,7 @@ suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Import database
 
-Data <- read_csv("~/Downloads/Database - Case study 2.txt")
+Data <- read_csv("~/Trabajo de grado/Database - Case study 2.txt")
 
 # 2.1 Select the response variable and explanatory variables
 
