@@ -113,9 +113,15 @@ EEMC_tau <- sd(M3$TAU)/sqrt(TEM_tau); round(summary(EEMC_tau), 4) # tau2
 
 EEMC_lambda <- sd(M3$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 4) # lambda
 
-# 4. Bayesian inference
+# 4. Display log-likelihood chain
 
-# 4.1 Bayesian inference for beta
+plot(M3$LL, type = "p", pch = ".", cex = 1.1, col = "firebrick2", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
+     ylim = c(300, 340))
+abline(h = mean(M3$LL), lwd = 3, col = "firebrick2")
+
+# 5. Bayesian inference
+
+# Bayesian inference for beta
 
 BETA_MEAN <- round(apply(M3$BETA, MARGIN = 2, FUN = mean), 4) # Posterior mean
 
@@ -125,7 +131,7 @@ BETA_SD <- round(apply(M3$BETA, MARGIN = 2, FUN = sd), 4) # Posterior standard d
 
 CI_BETA <- round(apply(M3$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.2 Bayesian inference for sigma2
+# Bayesian inference for sigma2
 
 SIGMA2_MEAN <- round(mean(M3$SIGMA), 5) # Posterior mean
 
@@ -135,7 +141,7 @@ SIGMA2_SD <- round(sd(M3$SIGMA), 5) # Posterior standard deviation
 
 CI_SIGMA <- round(quantile(x = M3$SIGMA, probs = c(0.025, 0.975)), 5) # 95% credible interval
 
-# 4.3 Bayesian inference for lambda
+# Bayesian inference for lambda
 
 LAMBDA_MEAN <- round(mean(M3$LAMBDA), 4) # Posterior mean
 
@@ -145,7 +151,7 @@ LAMBDA_SD <- round(sd(M3$LAMBDA), 4) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M3$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.4 Compute information criterion and k-fold cross validation
+# 6. Compute information criterion and k-fold cross validation
 
 # Deviance Information Criterion
 
@@ -174,28 +180,28 @@ for (i in 1:n) {
 
 WAIC <- -2*LPPD + 2*pWAIC
 
-# 4.5 Display log-likelihood chain
+# 2-fold cross validation
 
-plot(M3$LL, type = "p", pch = ".", cex = 1.1, col = "firebrick2", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
-     ylim = c(300, 340))
-abline(h = mean(M3$LL), lwd = 3, col = "firebrick2")
-
-# 10-fold cross validation
-
-cross_validation <- function(fold, y, x, p, 
-                             e, f, g, h){
+cross_validation <- function(fold, y, x, p, e, g, h){
   id <- kfold(x = y, k = fold)
   
   # Objects where the mean absolute error, and the mean squared prediction error will be stored
-  mae <- NULL
-  mse <- NULL
+  mape <- NULL
+  mspe <- NULL
   
   for (j in 1:fold) {
     y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
     y_test <- y[id = j]; x_test <- x[id = j] # Test data set
     
+    n <- length(y_train)
+    
+    # Hyperparameter elicitation
+    beta_OLS <- solve(t(x_train)%*%x_train)%*%t(x_train)%*%y_train
+    residuals <- y_train - x_train%*%beta_OLS
+    sigma2_OLS <- sum(residuals^2)/(n - p)
+    
     # Fit Bayesian LASSO regression model
-    M3 <- Gibbs_lasso(y_train, x_train, e, f, g, h, n = length(y_train), p,
+    M3 <- Gibbs_lasso(y_train, x_train, e, f = e*sigma2_OLS, g, h, n, p,
                       n_burn = 1000,
                       n_sams = 10000,
                       n_skip = 10)
@@ -207,18 +213,18 @@ cross_validation <- function(fold, y, x, p,
     y_hat_lasso <- x_test%*%beta_lasso
     
     # Compute mean absolute error
-    mae_lasso <- mean(abs(y_test - y_hat_lasso))
+    mape_lasso <- mean(abs(y_test - y_hat_lasso))
     
     # Compute mean squared prediction error
-    mse_lasso <- mean((y_test - y_hat_lasso)^2)
+    mspe_lasso <- mean((y_test - y_hat_lasso)^2)
     
-    mae <- rbind(mae, mae_lasso)
-    mse <- rbind(mse, mse_lasso)
+    mape <- rbind(mape, mape_lasso)
+    mspe <- rbind(mspe, mspe_lasso)
   }
-  return(list(mae = mean(mae), mse = mean(mse)))
+  return(list(mape = mean(mape), mspe = mean(mspe)))
 }
 
-cross_validation_M3 <- cross_validation(fold = 10, y, x, p, e, f, g, h)
+cross_validation_M3 <- cross_validation(fold = 2, y, x, p, e, g, h)
 
 # 5. Monte Carlo samples from the posterior predictive distribution of test statistics
 
