@@ -66,9 +66,14 @@ EEMC_sigma2 <- sd(M2$SIGMA)/sqrt(TEM_sigma2); round(summary(EEMC_sigma2), 4) # s
 
 EEMC_lambda <- sd(M2$LAMBDA)/sqrt(TEM_lambda); round(summary(EEMC_lambda), 4) # lambda
 
-# 4. Bayesian inference
+# 4. Display log-likelihood chain
 
-# 4.1 Bayesian inference for beta
+plot(M2$LL, type = "p", pch = ".", cex = 1.1, col = "#00CD66", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",)
+abline(h = mean(M2$LL), lwd = 3, col = "#00CD66")
+
+# 5. Bayesian inference
+
+# Bayesian inference for beta
 
 BETA_MEAN <- round(apply(M2$BETA, MARGIN = 2, FUN = mean), 3) # Posterior mean
 
@@ -78,7 +83,7 @@ BETA_SD <- round(apply(M2$BETA, MARGIN = 2, FUN = sd), 3) # Posterior standard d
 
 CI_BETA <- round(apply(M2$BETA, MARGIN = 2, FUN = quantile, probs = c(0.025, 0.975)), 3) # 95% credible interval
 
-# 4.2 Bayesian inference for sigma2
+# Bayesian inference for sigma2
 
 SIGMA2_MEAN <- round(mean(M2$SIGMA), 3) # Posterior mean
 
@@ -88,7 +93,7 @@ SIGMA2_SD <- round(sd(M2$SIGMA), 3) # Posterior standard deviation
 
 CI_SIGMA <- round(quantile(x = M2$SIGMA, probs = c(0.025, 0.975)), 3) # 95% credible interval
 
-# 4.3 Bayesian inference for lambda
+# Bayesian inference for lambda
 
 LAMBDA_MEAN <- round(mean(M2$LAMBDA), 3) # Posterior mean
 
@@ -98,7 +103,7 @@ LAMBDA_SD <- round(sd(M2$LAMBDA), 3) # Posterior standard deviation
 
 CI_LAMBDA <- round(quantile(x = M2$LAMBDA, probs = c(0.025, 0.975)), 4) # 95% credible interval
 
-# 4.4 Compute information criterion and k-fold cross validation
+# 6 Compute information criterion and cross validation
 
 # Deviance Information Criterion
 
@@ -127,54 +132,49 @@ for (i in 1:n) {
 
 WAIC <- -2*LPPD + 2*pWAIC
 
-# 10-fold cross validation
+# Cross validation
 
-cross_validation <- function(fold, y, x, p, 
-                             a, b, c, d){
-  id <- kfold(x = y, k = fold)
+cross_validation <- function(y, x, n, p, a, c, d){
+  index <- sample(1:n, size = 0.7*n)
+  
+  y_train <- y[index]; x_train <- x[index,] # Train data set
+  y_test <- y[-index]; x_test <- x[-index,] # Test data set
   
   # Objects where the mean absolute error, and the mean squared prediction error will be stored
-  mae <- NULL
-  mse <- NULL
+  mape <- NULL
+  mspe <- NULL
   
-  for (j in 1:fold) {
-    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
-    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
-    
-    # Fit Bayesian Ridge regression model
-    M2 <- Gibbs_ridge(y_train, x_train, a, b, c, d, n = length(y_train), p,
-                      n_burn = 1000,
-                      n_sams = 10000,
-                      n_skip = 10)
-    
-    # Posterior mean for beta
-    beta_ridge <- colMeans(M2$BETA)
-    
-    # Linear predictor
-    y_hat_ridge <- x_test%*%beta_ridge
-    
-    # Compute mean absolute error
-    mae_ridge <- mean(abs(y_test - y_hat_ridge))
-    
-    # Compute mean squared prediction error
-    mse_ridge <- mean((y_test - y_hat_ridge)^2)
-    
-    mae <- rbind(mae, mae_ridge)
-    mse <- rbind(mse, mse_ridge)
-  }
-  return(list(mae = mean(mae), mse = mean(mse)))
+  n <- length(y_train)
+  
+  # Hyperparameter elicitation
+  beta_OLS <- solve(t(x_train)%*%x_train)%*%t(x_train)%*%y_train
+  residuals <- y_train - x_train%*%beta_OLS
+  sigma2_OLS <- sum(residuals^2)/(n - p)
+  
+  # Fit Bayesian Ridge regression model
+  M2 <- Gibbs_ridge(y_train, x_train, a, b = a*sigma2_0, c, d, n, p,
+                    n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
+                    n_sams = 10000, # Set the number of effective samples
+                    n_burn = 1000) # Set the number of burn-in samples
+  
+  # Posterior mean for beta
+  beta <- colMeans(M2$BETA)
+  
+  # Linear predictor
+  y_hat <- x_test%*%beta
+  
+  # Compute mean absolute prediction error
+  mape <- mean(abs(y_test - y_hat))
+  
+  # Compute mean squared prediction error
+  mspe <- mean((y_test - y_hat)^2)
+  
+  return(list(mape = mape, mspe = mspe))
 }
 
-cross_validation_M2 <- cross_validation(fold = 10, y, x, p, a, b, c, d)
+cross_validation_M2 <- cross_validation(y, x, n, p, a, c, d)
 
-# 4.5 Display log-likelihood chain
-
-plot(M2$LL, type = "p", pch = ".", cex = 1.1, col = "#00CD66", xlab = "Iteración", ylab = "Log-verosimilitud", main = "",
-     #ylim = c(300, 340)
-     )
-abline(h = mean(M2$LL), lwd = 3, col = "#00CD66")
-
-# 5. Monte Carlo samples from the posterior predictive distribution of test statistics
+# 7. Monte Carlo samples from the posterior predictive distribution of test statistics
 
 # Create test statistics function
 
@@ -240,7 +240,7 @@ for (j in 1:length(ts_hat)) {
   ppp[j] <- round(mean(ts[,j] < ts_hat[j]), 4)
 }
 
-# 6. Posterior predictive density estimate
+# 8. Posterior predictive density estimate
 
 posterior_density_estimate <- function(model, 
                                        y_seq, # Define a sequence of y values for density estimation
