@@ -8,7 +8,6 @@ load("~/Trabajo de grado/Simulation framework/Dataset - Simulation framework.RDa
 
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(GIGrvg)))
-suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Auxiliary functions
 
@@ -64,50 +63,49 @@ hat <- function(model, scenery, y, x, n, p, i){
 
 # Cross validation
 
-cross_validation <- function(fold, y, x, p, 
+cross_validation <- function(y, x, n, p, 
                              a, b, c, d,
                              e, f, g, h){
-  id <- kfold(x = y, k = fold)
+  # Create the train and test dataset
+  index <- sample(1:n, size = 0.7*n)
+  
+  y_train <- y[index]; x_train <- x[index,] # Train dataset
+  y_test <- y[-index]; x_test <- x[-index,] # Test dataset
   
   # Objects where the mean absolute error, and the mean squared prediction error will be stored
-  mae <- NULL
-  mse <- NULL
+  mape <- NULL
+  mspe <- NULL
   
-  for (j in 1:fold) {
-    y_train <- y[id != j]; x_train <- x[id != j,] # Train data set
-    y_test <- y[id = j]; x_test <- x[id = j] # Test data set
+  # Fit Bayesian Ridge and LASSO regression models
+  M2 <- Gibbs_ridge(y_train, x_train, a, b, c, d, n = length(y_train), p,
+                    n_burn = 1000,
+                    n_sams = 10000,
+                    n_skip = 10)
     
-    # Fit Bayesian Ridge and LASSO regression models
-    M2 <- Gibbs_ridge(y_train, x_train, a, b, c, d, n = length(y_train), p,
-                      n_burn = 1000,
-                      n_sams = 10000,
-                      n_skip = 10)
+  M3 <- Gibbs_lasso(y_train, x_train, e, f, g, h, n = length(y_train), p,
+                    n_burn = 1000,
+                    n_sams = 10000,
+                    n_skip = 10)
     
-    M3 <- Gibbs_lasso(y_train, x_train, e, f, g, h, n = length(y_train), p,
-                      n_burn = 1000,
-                      n_sams = 10000,
-                      n_skip = 10)
+  # Posterior mean for beta
+  beta_ridge <- colMeans(M2$BETA)
+  beta_lasso <- colMeans(M3$BETA)
     
-    # Posterior mean for beta
-    beta_ridge <- colMeans(M2$BETA)
-    beta_lasso <- colMeans(M3$BETA)
+  # Linear predictor
+  y_hat_ridge <- x_test%*%beta_ridge
+  y_hat_lasso <- x_test%*%beta_lasso
     
-    # Linear predictor
-    y_hat_ridge <- x_test%*%beta_ridge
-    y_hat_lasso <- x_test%*%beta_lasso
+  # Compute mean absolute prediction error
+  mape_ridge <- mean(abs(y_test - y_hat_ridge))
+  mape_lasso <- mean(abs(y_test - y_hat_lasso))
     
-    # Compute mean absolute error
-    mae_ridge <- mean(abs(y_test - y_hat_ridge))
-    mae_lasso <- mean(abs(y_test - y_hat_lasso))
+  # Compute mean squared prediction error
+  mspe_ridge <- mean((y_test - y_hat_ridge)^2)
+  mspe_lasso <- mean((y_test - y_hat_lasso)^2)
     
-    # Compute mean squared prediction error
-    mse_ridge <- mean((y_test - y_hat_ridge)^2)
-    mse_lasso <- mean((y_test - y_hat_lasso)^2)
-    
-    mae <- rbind(mae, c(mae_ridge, mae_lasso))
-    mse <- rbind(mse, c(mse_ridge, mse_lasso))
-  }
-  return(list(mae = colMeans(mae), mse = colMeans(mse)))
+  mape <- rbind(mape, c(mape_ridge, mape_lasso))
+  mspe <- rbind(mspe, c(mspe_ridge, mspe_lasso))
+  return(list(mape = mape, mspe = mspe))
 }
 
 # 3. Hyperparameter elicitation
@@ -120,7 +118,7 @@ c <- 1; g <- 1 # Shape parameter of gamma distribution
 
 d <- 1; h <- 1 # Rate parameter of gamma distribution
 
-# 5. Results
+# 4. Results
 
 simulation_results <- function(data,
                                a, b, c, d,
@@ -177,13 +175,11 @@ simulation_results <- function(data,
     INF_CRI <- rbind(INF_CRI, round(inf_cri, 2))
     
     # Cross validation
-    cro_val <- cross_validation(fold = 10, y, x, p, a, b, c, d, e, f, g, h)
+    cro_val <- cross_validation(y, x, n, p, a, b, c, d, e, f, g, h)
     
-    CRO_VAL <- rbind(CRO_VAL, c(i, cro_val$mae, cro_val$mse))
+    CRO_VAL <- rbind(CRO_VAL, c(i, cro_val$mape, cro_val$mspe))
     }
   return(list(RIDGE = RIDGE, LASSO = LASSO, INF_CRI = INF_CRI, CRO_VAL = CRO_VAL))
 }
 
-results <- simulation_results(Scenery, data, a, b, c, d, e, f, g, h)
-
-save(results, file = "~/Downloads/M2 y M3.RData")
+results <- simulation_results(data, a, b, c, d, e, f, g, h)
