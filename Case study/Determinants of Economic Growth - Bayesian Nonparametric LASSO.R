@@ -393,14 +393,14 @@ xi <- out_sample(y_test, x_test, k_pos, xi_hat_cv, beta_cv, sigma2_cv, alpha_cv,
                  e, f = e*sigma2_OLS, g, h)
    
 # Linear predictor
-y_hat_ridge <- numeric(length(y_test))
+y_hat_lasso <- numeric(length(y_test))
 for (i in 1:length(y_test)) {
-  y_hat_ridge[i] <- x_test[i,]%*%beta_cv[,xi[i]]
+  y_hat_lasso[i] <- x_test[i,]%*%beta_cv[,xi[i]]
 }
     
 # Compute mean absolute prediction error and mean squared prediction error
-mape <- mean(abs(y_test - y_hat_ridge))
-mspe <- mean((y_test - y_hat_ridge)^2)
+mape <- mean(abs(y_test - y_hat_lasso))
+mspe <- mean((y_test - y_hat_lasso)^2)
 
 # 7. Bayesian inference for density function
 
