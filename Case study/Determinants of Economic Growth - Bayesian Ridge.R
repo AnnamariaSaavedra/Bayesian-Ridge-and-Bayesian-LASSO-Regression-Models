@@ -9,7 +9,6 @@ suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
-suppressMessages(suppressWarnings(library(dismo)))
 
 # 2. Import database
 
@@ -221,7 +220,7 @@ cross_validation <- function(y, data, n, p, a, c, d){
   x_test <- x[-index,] # Standardized test dataset
   
   # Fit Bayesian Ridge regression model
-  M2 <- Gibbs_ridge(y_train, x_train, a, b = a*sigma2_0, c, d, n, p,
+  M2 <- Gibbs_ridge(y_train, x_train, a, b = a*sigma2_OLS, c, d, n, p,
                     n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
                     n_sams = 10000, # Set the number of effective samples
                     n_burn = 1000) # Set the number of burn-in samples
