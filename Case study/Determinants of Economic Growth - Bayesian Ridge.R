@@ -187,7 +187,7 @@ WAIC <- -2*LPPD + 2*pWAIC
 
 # Cross validation
 
-cross_validation <- function(y, data, n, p, a, c, d){
+cross_validation <- function(y, Data, n, p, a, c, d){
   x <- Data %>%
     dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
     mutate(INT = 1) %>% # Create the intercept column
