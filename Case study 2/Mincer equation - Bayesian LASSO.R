@@ -7,6 +7,7 @@ rm(list=ls()); set.seed(123)
 suppressMessages(suppressWarnings(library(readr)))
 suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
+suppressMessages(suppressWarnings(library(GIGrvg)))
 suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 
