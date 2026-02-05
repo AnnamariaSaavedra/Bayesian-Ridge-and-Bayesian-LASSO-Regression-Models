@@ -75,6 +75,17 @@ p <- ncol(x) # Number of explanatory variables
 
 # 3.1 Hyperparameter elicitation
 
+x_b <- Data %>%
+  dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
+  mutate(INT = 1) %>% # Create the intercept column
+  as.matrix()
+
+beta_OLS <- solve(t(x_b)%*%x_b)%*%t(x_b)%*%y
+
+residuals <- y - x_b%*%beta_OLS
+
+sigma2_OLS <- sum(residuals^2)/(n - p)
+
 e <- 3 # Shape parameter of inverse-gamma distribution
 
 f <- e*sigma2_OLS # Scale parameter of inverse-gamma distribution
@@ -182,7 +193,13 @@ WAIC <- -2*LPPD + 2*pWAIC
 
 # Cross validation
 
-cross_validation <- function(y, x, n, p, e, g, h){
+cross_validation <- function(y, Data, n, p, e, g, h){
+  x <- Data %>%
+    dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
+    mutate(INT = 1) %>% # Create the intercept column
+    as.matrix()
+  
+  # Create the train and test dataset
   index <- sample(1:n, size = 0.7*n)
   
   y_train <- y[index]; x_train <- x[index,] # Train dataset
@@ -199,8 +216,17 @@ cross_validation <- function(y, x, n, p, e, g, h){
   residuals <- y_train - x_train%*%beta_OLS
   sigma2_OLS <- sum(residuals^2)/(n - p)
   
-  # Fit Bayesian LASSO regression model
-  M3 <- Gibbs_lasso(y_train, x_train, e, f = e*sigma2_0, g, h, n, p,
+  x <- Data %>%
+    dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
+    scale(center = TRUE, scale = TRUE) %>% # Standardize the explanatory variables
+    as.matrix()
+  x <- cbind(x, 1) # Create the intercept column
+  
+  x_train <- x[index,] # Standardized train dataset
+  x_test <- x[-index,] # Standardized test dataset
+  
+  # Fit Bayesian Ridge regression model
+  M3 <- Gibbs_lasso(y_train, x_train, e, f = e*sigma2_OLS, g, h, n, p,
                     n_skip = 10, # Accounting for Markov chain autocorrelation will require systematic sampling,
                     n_sams = 10000, # Set the number of effective samples
                     n_burn = 1000) # Set the number of burn-in samples
@@ -220,7 +246,7 @@ cross_validation <- function(y, x, n, p, e, g, h){
   return(list(mape = mape, mspe = mspe))
 }
 
-cross_validation_M3 <- cross_validation(y, x, n, p, e, g, h)
+cross_validation_M3 <- cross_validation(y, Data, n, p, e, g, h)
 
 # 5. Monte Carlo samples from the posterior predictive distribution of test statistics
 
