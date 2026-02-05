@@ -253,7 +253,7 @@ CI_ALPHA <- round(quantile(x = M5$ALPHA, probs = c(0.025, 0.975)), 4) # 95% cred
 beta <- round(inference$beta, 4)
 sigma2 <- round(inference$sigma2, 5)
 
-xi_hat <- A$xi_hat # Compute co-clustering probabilities
+xi_hat <- rep(1, n) # Since K = 1, all the observations belong to the same cluster
 
 LL_HAT <- numeric(n)
 
