@@ -70,7 +70,8 @@ ggplot(K_table, aes(x = K, y = Freq)) +
 
 # 4. Bayesian inference for K = 2
 
-hat_np <- function(model, K, p, ite){
+hat_np <- function(model, K, p){
+  ite <- nrow(model$XI)
   permu <- gtools::permutations(n = K, r = K) # Permutations
   
   # Objects where the samples of beta, and sigma2 will be stored
@@ -97,29 +98,29 @@ hat_np <- function(model, K, p, ite){
   # Average over the permuted spaces
   for (b in 1:ite) {
     if (length(table(model$XI[b,])) == K) {
-      for (j in 1:p) {
-        beta_current <- model$BETA[[b]][sort(unique(model$XI[b,])), , drop = FALSE][,j]
-        # Reorder according to the permutations, and compute the distance of each sample to its posterior mean
-        dist <- apply(X = permu, MARGIN = 1, 
-                      FUN = function(p) {
-                        permuted_beta <- beta_current[p]
-                        sum((permuted_beta - beta_pos[,j])^2)
-                      }
-        )
-        # Select the optimum permutation
-        best_permu <- permu[which.min(dist),]
-        BETA_corrected[[j]] <- rbind(BETA_corrected[[j]], beta_current[best_permu])
-      }
-      sigma2_current <- model$SIGMA[[b]]
+      beta_current <- model$BETA[[b]][sort(unique(model$XI[b,])), , drop = FALSE]
       # Reorder according to the permutations, and compute the distance of each sample to its posterior mean
       dist <- apply(X = permu, MARGIN = 1, 
-                    FUN = function(p) {
-                      permuted_sigma2 <- sigma2_current[p]
-                      sum((permuted_sigma2 - sigma2_pos)^2)
+                    FUN = function(perm) {
+                      permuted_beta <- sum((beta_current[perm,, drop = FALSE] - beta_pos)^2)
                     }
       )
       # Select the optimum permutation
       best_permu <- permu[which.min(dist),]
+      for (j in 1:p) {
+        BETA_corrected[[j]] <- rbind(BETA_corrected[[j]], beta_current[best_permu, j]) 
+      }
+      
+      sigma2_current <- model$SIGMA[[b]]
+      # Reorder according to the permutations, and compute the distance of each sample to its posterior mean
+      dist2 <- apply(X = permu, MARGIN = 1, 
+                     FUN = function(perm) {
+                       permuted_sigma2 <- sigma2_current[perm]
+                       sum((permuted_sigma2 - sigma2_pos)^2)
+                     }
+      )
+      # Select the optimum permutation
+      best_permu <- permu[which.min(dist2),]
       SIGMA2_corrected <- rbind(SIGMA2_corrected, sigma2_current[best_permu])
     }
   }
@@ -142,7 +143,6 @@ hat_np <- function(model, K, p, ite){
   for (k in 1:K) {
     inf[p + 1, id(k)] <- c(sigma2_mean[k], sigma2_ic[1, k], sigma2_ic[2, k])
   }
-  return(list(inference = inf))
+  return(inference = inf)
 }
-
 inference <- hat_np(hyperparameter, K = 2, p, ite = 10000)$inference
