@@ -15,7 +15,7 @@ suppressMessages(suppressWarnings(library(GIGrvg)))
 
 # 2. Import dataset
 
-Data <- read_xlsx(path = "~/Trabajo de grado/Database.xlsx")
+Data <- read_xlsx(path = "~/Trabajo de grado/Database - Case study 1.xlsx")
 
 # 2.1 Select response variable and explanatory variables
 
