@@ -177,7 +177,7 @@ simulation_results <- function(data,
     # Cross validation
     cro_val <- cross_validation(y, x, n, p, a, b, c, d, e, f, g, h)
     
-    CRO_VAL <- rbind(CRO_VAL, c(i, cro_val$mape, cro_val$mspe))
+    CRO_VAL <- rbind(CRO_VAL, c(i, round(cro_val$mape, 2), round(cro_val$mspe, 2)))
     }
   return(list(RIDGE = RIDGE, LASSO = LASSO, INF_CRI = INF_CRI, CRO_VAL = CRO_VAL))
 }
