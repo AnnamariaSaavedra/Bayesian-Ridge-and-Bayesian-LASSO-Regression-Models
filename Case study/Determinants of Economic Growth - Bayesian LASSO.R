@@ -185,8 +185,8 @@ WAIC <- -2*LPPD + 2*pWAIC
 cross_validation <- function(y, x, n, p, e, g, h){
   index <- sample(1:n, size = 0.7*n)
   
-  y_train <- y[index]; x_train <- x[index,] # Train data set
-  y_test <- y[-index]; x_test <- x[-index,] # Test data set
+  y_train <- y[index]; x_train <- x[index,] # Train dataset
+  y_test <- y[-index]; x_test <- x[-index,] # Test dataset
   
   # Objects where the mean absolute error, and the mean squared prediction error will be stored
   mape <- NULL
