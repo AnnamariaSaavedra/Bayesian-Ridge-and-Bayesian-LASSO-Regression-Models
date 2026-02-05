@@ -338,8 +338,6 @@ x <- Data %>%
   mutate(INT = 1) %>% # Create the intercept column
   as.matrix()
   
-n <- length(y) # Sample size
-  
 # Create the train and test dataset
 index <- sample(1:n, size = 0.7*n)
   
@@ -367,37 +365,37 @@ mspe <- NULL
 n <- length(y_train)
   
 # Fit Bayesian Nonparametric LASSO regression model
-M5 <- Gibbs_lassonp(y_train, x_train, 
-                    n_burn = 1000, 
-                    n_sams = 10000, 
-                    n_skip = 10, 
-                    e, f = e*sigma2_OLS, g, h, l, m, n, p, verbose = TRUE)
+M5_CV <- Gibbs_lassonp(y_train, x_train, 
+                       n_burn = 1000, 
+                       n_sams = 10000, 
+                       n_skip = 10, 
+                       e, f = e*sigma2_OLS, g, h, l, m, n, p, verbose = TRUE)
     
 # Inference on the number of clusters
-K <- apply(M5$XI, 1, function(x) length(unique(x)))
+K <- apply(M5_CV$XI, 1, function(x) length(unique(x)))
 K_table <- as.data.frame(table(K)/length(K))
     
 # Posterior number of clusters
 k_pos <- as.numeric(K_table$K[which.max(K_table$Freq)])
     
 # Posterior mean for beta and sigma2
-beta <- hat_np(M5, k_pos, p)$beta
-sigma2 <- hat_np(M5, k_pos, p)$sigma2
+beta_cv <- hat_np(M5_CV, k_pos, p)$beta
+sigma2_cv <- hat_np(M5_CV, k_pos, p)$sigma2
     
 # Posterior mean for alpha
-alpha <- mean(M5$ALPHA)
+alpha_cv <- mean(M5_CV$ALPHA)
     
 # Cluster assignment for train dataset
-xi_hat <- rep(1, n) # Since K = 1, all the observations belong to the same cluster
+xi_hat_cv <- rep(1, n) # Since K = 1, all the observations belong to the same cluster
   
 # Cluster assignment for test dataset
-xi <- out_sample(y_test, x_test, k_pos, xi_hat, beta, sigma2, alpha,
+xi <- out_sample(y_test, x_test, k_pos, xi_hat_cv, beta_cv, sigma2_cv, alpha_cv,
                  e, f = e*sigma2_OLS, g, h)
    
 # Linear predictor
 y_hat_ridge <- numeric(length(y_test))
 for (i in 1:length(y_test)) {
-  y_hat_ridge[i] <- x_test[i,]%*%beta[,xi[i]]
+  y_hat_ridge[i] <- x_test[i,]%*%beta_cv[,xi[i]]
 }
     
 # Compute mean absolute prediction error and mean squared prediction error
