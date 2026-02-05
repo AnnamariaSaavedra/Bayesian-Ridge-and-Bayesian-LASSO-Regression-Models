@@ -7,9 +7,7 @@ rm(list=ls()); set.seed(123)
 suppressMessages(suppressWarnings(library(readxl)))
 suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(mvtnorm)))
-suppressMessages(suppressWarnings(library(coda)))
 suppressMessages(suppressWarnings(library(ggplot2)))
-suppressMessages(suppressWarnings(library(mclust)))
 
 # 2. Import dataset
 
