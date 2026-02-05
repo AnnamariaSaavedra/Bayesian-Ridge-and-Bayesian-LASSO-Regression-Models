@@ -333,8 +333,6 @@ out_sample <- function(y_test, x_test, K, xi_hat, beta, sigma2, alpha,
 
 # Cross validation
 
-y <- Data$GR6096 # Set the response variable
-  
 x <- Data %>%
   dplyr::select(-c(CODE, GR6096)) %>% # Set the matrix containing the explanatory variables
   mutate(INT = 1) %>% # Create the intercept column
