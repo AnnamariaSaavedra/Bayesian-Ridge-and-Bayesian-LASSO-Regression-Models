@@ -4,7 +4,7 @@ set.seed(123)
 
 # Full conditional distribution of xi
 
-sample_xi_lasso <- function(y, x, xi, beta, sigma2, alpha, e, f, g, h) {
+sample_xi_lasso <- function(y, x, xi, beta, sigma2, alpha, e, f, g, h, n, p) {
   n <- length(y) # Number of observations
   
   for (i in 1:n) {
@@ -99,7 +99,7 @@ sample_beta_lassonp <- function(y, x, xi, sigma2, tau, p)
 
 # Full conditional distribution of sigma2
 
-sample_sigma2_lassonp <- function(y, x, xi, beta, e, f)
+sample_sigma2_lassonp <- function(y, x, xi, beta, e, f, p)
 {
   K <- max(xi) # Number of clusters
   
@@ -124,7 +124,7 @@ sample_sigma2_lassonp <- function(y, x, xi, beta, e, f)
 
 # Full conditional distribution of tau
 
-sample_tau_lassonp <- function(xi, beta, lambda){
+sample_tau_lassonp <- function(xi, beta, lambda, p){
   K <- max(xi) # Number of clusters
   
   beta_j <- colSums(beta^2)
@@ -190,18 +190,18 @@ Gibbs_lassonp <- function(y, x, n_burn, n_sams, n_skip, e, f, g, h, l, m, n, p, 
   
   for (t in 1:B) {
     # Update xi
-    xi_b <- sample_xi_lasso(y, x, xi, beta, sigma2, alpha, e, f, g, h)
+    xi_b <- sample_xi_lasso(y, x, xi, beta, sigma2, alpha, e, f, g, h, n, p)
     xi <- xi_b$xi
     beta <- xi_b$beta
     sigma2 <- xi_b$sigma2
     
     # Update cluster parameters
-    beta <- sample_beta_lassonp(y, x, xi, sigma2, tau) # Update beta
-    sigma2 <- sample_sigma2_lassonp(y, x, xi, beta, e, f) # Update sigma2
+    beta <- sample_beta_lassonp(y, x, xi, sigma2, tau, p) # Update beta
+    sigma2 <- sample_sigma2_lassonp(y, x, xi, beta, e, f, p) # Update sigma2
     
     # Update hyperparameters
-    tau <- sample_tau_lassonp(xi, beta, lambda) # Update tau
-    lambda <- sample_lambda_lassonp(tau, g, h) # Update lambda
+    tau <- sample_tau_lassonp(xi, beta, lambda, p) # Update tau
+    lambda <- sample_lambda_lassonp(tau, g, h, p) # Update lambda
     alpha <- sample_alpha(alpha, xi, n, l, m) # Update alpha
     
     # Compute log-likelihood
