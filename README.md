@@ -1,1 +1,1 @@
-# Bayesian-Ridge-and-Bayesian-LASSO-Regression-Models
+# Bayesian Nonparametric LASSO and Ridge Regression Models
